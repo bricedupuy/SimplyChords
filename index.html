@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chord Board — Progression Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-title">Chord Board</span>
+    <span class="logo-sub">progression map · phase 2</span>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <button id="theme-toggle" title="Toggle light/dark theme">
+      <span class="theme-icon">☀️</span>
+      <span class="theme-label">Light</span>
+    </button>
+    <button id="sound-toggle" class="active">
+      <span class="sound-icon">🔊</span>
+      <span>Sound</span>
+    </button>
+  </div>
+</header>
+
+<!-- ── Control strip ───────────────────────────────────────────────────────── -->
+<div class="control-strip">
+  <div class="ctrl-group">
+    <span class="ctrl-label">Instrument</span>
+    <div class="pill-group">
+      <button class="pill-btn active" data-instrument="piano">Piano</button>
+      <button class="pill-btn" data-instrument="guitar">Guitar</button>
+      <button class="pill-btn" data-instrument="ukulele">Ukulele</button>
+    </div>
+  </div>
+  <div class="ctrl-group" id="format-group">
+    <span class="ctrl-label">Names</span>
+    <div class="pill-group">
+      <button class="pill-btn active" data-format="english">English</button>
+      <button class="pill-btn" data-format="solfege">Solfège</button>
+      <button class="pill-btn" data-format="nashville">Nashville</button>
+    </div>
+  </div>
+  <div class="ctrl-group">
+    <span class="ctrl-label">View</span>
+    <div class="pill-group">
+      <button class="pill-btn active" data-viewmode="name">Name</button>
+      <button class="pill-btn" data-viewmode="diagram">Diagram</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Key selector ─────────────────────────────────────────────────────────── -->
+<div class="key-section">
+  <span class="ctrl-label">Key</span>
+  <div class="key-buttons" id="key-buttons"></div>
+  <button id="reset-path" class="reset-path-btn" title="Reset path highlighting">Reset path</button>
+</div>
+
+<!-- ── Mood bar ─────────────────────────────────────────────────────────────── -->
+<div class="mood-section">
+  <span class="ctrl-label">Mood</span>
+  <div id="mood-buttons" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+</div>
+
+<!-- ── Board ────────────────────────────────────────────────────────────────── -->
+<div class="board">
+
+  <div class="row-block">
+    <div class="row-header">
+      <span class="row-tag secondary">Secondary Dominants</span>
+      <span class="row-hint">V7 of each chord — resolves down</span>
+      <span class="loop-badge">↓ only</span>
+    </div>
+    <div class="chord-row" id="row-secondary"></div>
+  </div>
+
+  <div class="board-divider" data-label="↓ resolves to main"></div>
+
+  <div class="row-block">
+    <div class="row-header">
+      <span class="row-tag main">Main Chords</span>
+      <span class="row-hint">Start here — mix freely</span>
+      <span class="loop-badge can-loop">⟳ free mix</span>
+    </div>
+    <div class="chord-row" id="row-main"></div>
+  </div>
+
+  <div class="board-divider" data-label="↑ return via I, IV or V"></div>
+
+  <div class="row-block">
+    <div class="row-header">
+      <span class="row-tag modal">Modal Interchange</span>
+      <span class="row-hint">Borrowed from parallel minor — enter via I, IV, V</span>
+      <span class="loop-badge">↕ via I/IV/V</span>
+    </div>
+    <div class="chord-row" id="row-modal"></div>
+  </div>
+
+</div>
+
+<!-- ── Legend ───────────────────────────────────────────────────────────────── -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#4a8fe8"></div>Main diatonic</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#3dcca8"></div>Secondary dominant</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#e8a84a"></div>Modal interchange</div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:var(--text3);opacity:0.4"></div>Dimmed = not reachable from last chord
+  </div>
+  <div class="legend-item" style="margin-left:auto">
+    <span style="font-size:10px;color:var(--text3)">Click tile to play &amp; add to progression &nbsp;·&nbsp; ⓘ for details</span>
+  </div>
+</div>
+
+<!-- ── Progression tray ──────────────────────────────────────────────────────── -->
+<div class="prog-tray">
+  <div class="prog-tray-header">
+    <span class="prog-tray-title">Progression</span>
+    <div class="prog-tray-actions">
+      <button id="prog-play" class="prog-action-btn" disabled title="Play progression">▶ Play</button>
+      <button id="prog-undo" class="prog-action-btn" title="Remove last chord">↩ Undo</button>
+      <button id="prog-clear" class="prog-action-btn prog-clear-btn" title="Clear all">✕ Clear</button>
+    </div>
+  </div>
+  <div class="prog-steps-wrap">
+    <div id="prog-steps"></div>
+  </div>
+  <div class="prog-export-wrap">
+    <span class="prog-export-label">Export:</span>
+    <span id="prog-export" class="prog-export-text"></span>
+  </div>
+</div>
+
+<!-- ── Detail panel overlay ──────────────────────────────────────────────────── -->
+<div id="detail-panel-overlay">
+  <div id="detail-panel">
+    <button id="dp-close">×</button>
+    <div id="dp-chord-name">C</div>
+    <div id="dp-chord-meta">I — Major</div>
+
+    <div class="dp-section-label">Piano</div>
+    <div id="dp-piano"></div>
+
+    <div class="dp-section-label" id="dp-fret-label" style="display:none">Guitar</div>
+    <div id="dp-fret-wrap" style="display:none"></div>
+
+    <button class="dp-play-btn" id="dp-play">▶&nbsp; Play chord</button>
+
+    <div class="dp-section-label">Intervals</div>
+    <div class="pills" id="dp-intervals"></div>
+
+    <div class="dp-section-label">Notes</div>
+    <div class="pills" id="dp-notes"></div>
+  </div>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

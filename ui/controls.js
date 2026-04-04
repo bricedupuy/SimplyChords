@@ -1,0 +1,144 @@
+// ── ui/controls.js ─────────────────────────────────────────────────────────────
+// Key selector, instrument picker, format picker, view mode, sound toggle, moods.
+
+import { CHROMATIC, ENHARMONIC, MOODS } from '../data/theory.js';
+
+let _state = null;
+let _onStateChange = null;
+
+export function initControls(state, onStateChange) {
+  _state = state;
+  _onStateChange = onStateChange;
+  buildKeyBar();
+  buildMoodBar();
+  bindToggleButtons();
+}
+
+// ── Key bar ───────────────────────────────────────────────────────────────────
+const DISPLAY_KEYS = ['C','D♭','D','E♭','E','F','G♭','G','A♭','A','B♭','B'];
+const KEY_TO_IDX = {};
+CHROMATIC.forEach((k, i) => KEY_TO_IDX[k] = i);
+// Map flat display names to chromatic index
+const FLAT_TO_IDX = { 'D♭':1, 'E♭':3, 'G♭':6, 'A♭':8, 'B♭':10 };
+
+function keyIdx(displayKey) {
+  if (FLAT_TO_IDX[displayKey] !== undefined) return FLAT_TO_IDX[displayKey];
+  return KEY_TO_IDX[displayKey] ?? 0;
+}
+
+function buildKeyBar() {
+  const bar = document.getElementById('key-buttons');
+  if (!bar) return;
+  bar.innerHTML = '';
+  DISPLAY_KEYS.forEach(k => {
+    const btn = document.createElement('button');
+    btn.className = 'key-btn';
+    btn.textContent = k;
+    btn.dataset.keyIdx = keyIdx(k);
+    if (keyIdx(k) === _state.tonicIdx) btn.classList.add('active');
+    btn.addEventListener('click', () => {
+      _state.tonicIdx = keyIdx(k);
+      document.querySelectorAll('.key-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      _onStateChange('key');
+    });
+    bar.appendChild(btn);
+  });
+}
+
+// ── Mood bar ──────────────────────────────────────────────────────────────────
+function buildMoodBar() {
+  const bar = document.getElementById('mood-buttons');
+  if (!bar) return;
+  bar.innerHTML = '';
+  MOODS.forEach(mood => {
+    const btn = document.createElement('button');
+    btn.className = 'mood-btn';
+    btn.dataset.moodId = mood.id;
+    btn.title = mood.desc;
+    btn.innerHTML = `<span class="mood-label">${mood.label}</span><span class="mood-desc">${mood.desc}</span>`;
+    btn.style.setProperty('--mood-color', mood.color);
+    btn.addEventListener('click', () => {
+      const wasActive = _state.activeMood?.id === mood.id;
+      _state.activeMood = wasActive ? null : mood;
+      document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
+      if (!wasActive) btn.classList.add('active');
+      _onStateChange('mood');
+    });
+    bar.appendChild(btn);
+  });
+}
+
+// ── Toggle buttons ────────────────────────────────────────────────────────────
+function bindToggleButtons() {
+  // Instrument picker
+  document.querySelectorAll('[data-instrument]').forEach(btn => {
+    if (btn.dataset.instrument === _state.instrument) btn.classList.add('active');
+    btn.addEventListener('click', () => {
+      _state.instrument = btn.dataset.instrument;
+      document.querySelectorAll('[data-instrument]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      _onStateChange('instrument');
+    });
+  });
+
+  // Chord format picker
+  document.querySelectorAll('[data-format]').forEach(btn => {
+    if (btn.dataset.format === _state.chordFormat) btn.classList.add('active');
+    btn.addEventListener('click', () => {
+      _state.chordFormat = btn.dataset.format;
+      document.querySelectorAll('[data-format]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      _onStateChange('format');
+    });
+  });
+
+  // View mode
+  document.querySelectorAll('[data-viewmode]').forEach(btn => {
+    if (btn.dataset.viewmode === _state.viewMode) btn.classList.add('active');
+    btn.addEventListener('click', () => {
+      _state.viewMode = btn.dataset.viewmode;
+      document.querySelectorAll('[data-viewmode]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      syncFormatGroupVisibility();
+      _onStateChange('viewmode');
+    });
+  });
+
+  syncFormatGroupVisibility();
+
+  // Sound toggle
+  const soundBtn = document.getElementById('sound-toggle');
+  if (soundBtn) {
+    updateSoundBtn(soundBtn);
+    soundBtn.addEventListener('click', () => {
+      _state.soundEnabled = !_state.soundEnabled;
+      updateSoundBtn(soundBtn);
+      _onStateChange('sound');
+    });
+  }
+
+  // Theme toggle
+  const themeBtn = document.getElementById('theme-toggle');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+      const html = document.documentElement;
+      const isLight = html.dataset.theme === 'light';
+      html.dataset.theme = isLight ? 'dark' : 'light';
+      themeBtn.querySelector('.theme-icon').textContent = isLight ? '☀️' : '🌙';
+      themeBtn.querySelector('.theme-label').textContent = isLight ? 'Light' : 'Dark';
+      _onStateChange('theme');
+    });
+  }
+}
+
+function syncFormatGroupVisibility() {
+  const el = document.getElementById('format-group');
+  if (el) el.style.display = _state.viewMode === 'diagram' ? 'none' : '';
+}
+
+function updateSoundBtn(btn) {
+  btn.classList.toggle('active', _state.soundEnabled);
+  btn.title = _state.soundEnabled ? 'Sound on (click to mute)' : 'Sound off (click to enable)';
+  btn.querySelector('.sound-icon').textContent = _state.soundEnabled ? '🔊' : '🔇';
+}
