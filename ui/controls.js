@@ -118,6 +118,17 @@ function bindToggleButtons() {
     });
   }
 
+  // Settings drawer toggle
+  const settingsBtn = document.getElementById('settings-toggle');
+  const drawer = document.getElementById('settings-drawer');
+  if (settingsBtn && drawer) {
+    settingsBtn.addEventListener('click', () => {
+      const open = drawer.classList.toggle('open');
+      settingsBtn.classList.toggle('open', open);
+      settingsBtn.setAttribute('aria-expanded', open);
+    });
+  }
+
   // Theme toggle
   const themeBtn = document.getElementById('theme-toggle');
   if (themeBtn) {
@@ -125,8 +136,9 @@ function bindToggleButtons() {
       const html = document.documentElement;
       const isLight = html.dataset.theme === 'light';
       html.dataset.theme = isLight ? 'dark' : 'light';
-      themeBtn.querySelector('.theme-icon').textContent = isLight ? '☀️' : '🌙';
-      themeBtn.querySelector('.theme-label').textContent = isLight ? 'Light' : 'Dark';
+      // Update PWA theme-color meta
+      const metaTheme = document.getElementById('meta-theme-color');
+      if (metaTheme) metaTheme.content = isLight ? '#0f1117' : '#f4f5f8';
       _onStateChange('theme');
     });
   }
@@ -139,6 +151,5 @@ function syncFormatGroupVisibility() {
 
 function updateSoundBtn(btn) {
   btn.classList.toggle('active', _state.soundEnabled);
-  btn.title = _state.soundEnabled ? 'Sound on (click to mute)' : 'Sound off (click to enable)';
-  btn.querySelector('.sound-icon').textContent = _state.soundEnabled ? '🔊' : '🔇';
+  btn.title = _state.soundEnabled ? 'Sound on' : 'Sound off';
 }

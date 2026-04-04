@@ -90,21 +90,19 @@ function buildTile(noteIdx, chordDef, rowClass, opts = {}) {
     diagramView.innerHTML = renderFretboard(noteIdx, chordDef.int, scaleSet, vk, st.instrument);
   }
 
-  // Info button
-  const infoBtn = document.createElement('button');
-  infoBtn.className = 'tile-info-btn';
-  infoBtn.title = 'Chord details';
-  infoBtn.innerHTML = `<svg viewBox="0 0 12 12" width="10" height="10">
-    <circle cx="6" cy="6" r="5.5" fill="none" stroke="currentColor" stroke-width="1"/>
-    <text x="6" y="9" text-anchor="middle" font-size="7" fill="currentColor">i</text></svg>`;
-  infoBtn.addEventListener('click', e => {
+  // ── Detail strip (full-width bottom zone, easy to tap) ───────────────────
+  const detailStrip = document.createElement('button');
+  detailStrip.className = 'tile-detail-strip';
+  detailStrip.title = 'Chord details';
+  detailStrip.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+  detailStrip.addEventListener('click', e => {
     e.stopPropagation();
     openDetailPanel(noteIdx, chordDef, chordName);
   });
 
   tile.appendChild(nameView);
   tile.appendChild(diagramView);
-  tile.appendChild(infoBtn);
+  tile.appendChild(detailStrip);
 
   // Click: play + add to progression + update dimming
   tile.addEventListener('click', () => {

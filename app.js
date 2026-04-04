@@ -36,6 +36,9 @@ export function init() {
   });
 
   renderBoard();
+
+  // Init Lucide icons (runs after all dynamic content is rendered)
+  if (window.lucide) window.lucide.createIcons();
 }
 
 function onStateChange(what) {
