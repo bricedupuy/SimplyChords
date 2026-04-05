@@ -29,6 +29,7 @@ function buildTile(noteIdx, chordDef, rowDef, opts = {}) {
   tile.className = [
     'chord-tile',
     `tile-${rowDef.style}`,
+    chordDef.isNeapolitan ? 'tile-neapolitan' : '',
     dimmed         ? 'tile-dimmed'   : '',
     moodHighlight  ? 'tile-mood'     : '',
     chordDef.tonic ? 'tile-tonic'    : '',

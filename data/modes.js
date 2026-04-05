@@ -1,28 +1,10 @@
 // ── data/modes.js ─────────────────────────────────────────────────────────────
-// Mode registry. Each mode defines its rows, row metadata, and path rules.
-// New modes can be added here without touching board.js or app.js.
-
-// ── Row descriptor schema ─────────────────────────────────────────────────────
-// {
-//   id:        string          — DOM container id (row-<id>)
-//   label:     string          — display name
-//   tag:       string          — short tag shown in row header
-//   hint:      string          — short description
-//   loopLabel: string          — loop badge text
-//   canLoop:   boolean         — whether chords mix freely
-//   style:     string          — CSS class suffix (main/secondary/modal/neapolitan/...)
-//   chords:    ChordDef[]      — chord definitions for this row
-//   rootCalc:  (cd, ti) => int — how to compute the root note index from tonic
-// }
+// Mode registry. Each mode defines its own rows, path rules, and arrow config.
+// To add a new mode: create a mode object and push it to MODES[].
 
 import { CHROMATIC, DIATONIC, SECONDARY, MODAL } from './theory.js';
 
-// ── Helper: semitone shorthand ────────────────────────────────────────────────
-const fix = semi => cd => (/* tonicIdx injected at call */ 0 + semi) % 12; // placeholder — real calc in mode
-
 // ── PROGRESSIONS mode ─────────────────────────────────────────────────────────
-// The original major-key board.
-
 export const MODE_PROGRESSIONS = {
   id:    'progressions',
   label: 'Progressions',
@@ -30,45 +12,28 @@ export const MODE_PROGRESSIONS = {
   scale: 'major',
   rows: [
     {
-      id:        'secondary',
-      label:     'Secondary Dominants',
-      tag:       'Secondary Dominants',
-      hint:      'V7 — resolves down',
-      loopLabel: '↓ only',
-      canLoop:   false,
-      style:     'secondary',
-      chords:    SECONDARY,
-      rootCalc:  (cd, ti) => (ti + cd.resolveSemi + 7) % 12,
+      id: 'secondary', tag: 'Secondary Dominants', hint: 'V7 — resolves down',
+      loopLabel: '↓ only', canLoop: false, style: 'secondary',
+      chords:   SECONDARY,
+      rootCalc: (cd, ti) => (ti + cd.resolveSemi + 7) % 12,
     },
     {
-      id:        'main',
-      label:     'Main Chords',
-      tag:       'Main Chords',
-      hint:      'Mix freely',
-      loopLabel: '⟳ free',
-      canLoop:   true,
-      style:     'main',
-      chords:    DIATONIC,
-      rootCalc:  (cd, ti) => (ti + cd.semi) % 12,
+      id: 'main', tag: 'Main Chords', hint: 'Mix freely',
+      loopLabel: '⟳ free', canLoop: true, style: 'main',
+      chords:   DIATONIC,
+      rootCalc: (cd, ti) => (ti + cd.semi) % 12,
     },
     {
-      id:        'modal',
-      label:     'Modal Interchange',
-      tag:       'Modal Interchange',
-      hint:      'Parallel minor — via I, IV, V',
-      loopLabel: '↕ I/IV/V',
-      canLoop:   false,
-      style:     'modal',
-      chords:    MODAL,
-      rootCalc:  (cd, ti) => (ti + cd.semi) % 12,
+      id: 'modal', tag: 'Modal Interchange', hint: 'Parallel minor — via I, IV, V',
+      loopLabel: '↕ I/IV/V', canLoop: false, style: 'modal',
+      chords:   MODAL,
+      rootCalc: (cd, ti) => (ti + cd.semi) % 12,
     },
   ],
-  // Path dimming rules: given lastSelected {id, row}, is this chord dimmed?
   isDimmed(chordId, rowId, lastSelected) {
     if (!lastSelected) return false;
     const { id: lastId, row: lastRow } = lastSelected;
     const GATEWAY = new Set(['I', 'IV', 'V']);
-
     if (lastRow === 'secondary') {
       const sec = SECONDARY.find(s => s.id === lastId);
       if (!sec) return false;
@@ -87,51 +52,67 @@ export const MODE_PROGRESSIONS = {
     }
     return false;
   },
-  // Arrow definitions: { from: {rowId, chordId}, to: {rowId, chordId}, style }
-  // 'all' = draw one arrow per chord in the row
   arrows: [
     { type: 'row-to-row-targeted', fromRow: 'secondary', toRow: 'main', style: 'teal' },
-    { type: 'gateway-down',        fromRow: 'main',      toRow: 'modal', gatewayIds: ['I','IV','V'], style: 'amber' },
+    { type: 'gateway-down', fromRow: 'main', toRow: 'modal', gatewayIds: ['I','IV','V'], style: 'amber' },
   ],
 };
 
 // ── DARK HARMONY mode ─────────────────────────────────────────────────────────
-// Based on the harmonic minor scale. Key of A = Am, Caug, Dm, F, E, G#dim, Bdim.
-// Three rows: Secondary Diminished (top), Main Chords (middle), Sec. Dim. iv/♭VI (bottom)
-// Plus a special Neapolitan chord (♭IIMaj7).
+// Based on the harmonic minor scale.
+// Key of A reference: Am(i), C Maj7(♭III), Dm(iv), F Maj(♭VI), E7(V), G#°(#vii°), B°(ii°)
+//
+// Row layout (top to bottom):
+//   [TOP]    Secondary Diminished V  +  Neapolitan (♭II Maj7) — both resolve to V
+//   [MAIN]   Main chords — mix freely
+//   [BOTTOM] Secondary Diminished iv, ♭VI — resolve up to iv or ♭VI
+//
+// Secondary diminished chords are fully-diminished 7ths rooted a semitone below their target.
+// The 4 top sec.dim chords are the 4 inversions/enharmonic spellings resolving to V:
+//   In A: D# (→E), F# (→G#... but here all → V=E), A (→Bb=Neap), C (→C#... all → V)
+// Per the PDF they all lead to V. Roots = targetSemi(V) - 1 minus 0,3,6,9 (dim7 symmetry).
 
-// Harmonic minor diatonic chords (semitones above minor tonic):
-//   i=0 (m), ♭IIIaug=3 (aug), iv=5 (m), ♭VI=8 (Maj), V=7 (Maj/dom), #vii°=11 (dim), ii°=2 (dim)
+// Helper: dim7 has interval symmetry — 4 inversions, each 3 semitones apart
+// For top row, all 4 dim7 chords resolve to V (semi=7). Their roots are 7-1=6, 6-3=3, 3-3=0, 0-3=9 → 6,3,0,9
+// In A: 6=F#, 3=C#... wait let me use the PDF literally:
+// PDF shows in key A: D#/Eb°, F#/Gb°, A°, C° → all resolve to E (V)
+// semitones from A: D#=6, F#=9(enharmon Gb), A=0(dim of A), C=3
+// So roots are: 6 (D#), 9 (F#), 0 (A), 3 (C) — these are tonic+6, +9, +0, +3
+
 const DH_MAIN = [
-  { id:'dh-i',     deg:'i',      semi:0,  int:[0,3,7],     quality:'minor',  qLabel:'m',    nash:'1m',  tonic:true  },
-  { id:'dh-bIII',  deg:'♭IIIaug',semi:3,  int:[0,4,8],     quality:'aug',    qLabel:'+',    nash:'♭3+', tonic:false },
-  { id:'dh-iv',    deg:'iv',     semi:5,  int:[0,3,7],     quality:'minor',  qLabel:'m',    nash:'4m',  tonic:false },
-  { id:'dh-bVI',   deg:'♭VI',    semi:8,  int:[0,4,7,11],  quality:'maj7',   qLabel:'Maj7', nash:'♭6',  tonic:false },
-  { id:'dh-V',     deg:'V',      semi:7,  int:[0,4,7,10],  quality:'dom7',   qLabel:'7',    nash:'5',   tonic:false },
-  { id:'dh-sharpdim',deg:'#vii°',semi:11, int:[0,3,6,9],   quality:'dim7',   qLabel:'°7',   nash:'7°',  tonic:false },
-  { id:'dh-iidim', deg:'ii°',    semi:2,  int:[0,3,6],     quality:'dim',    qLabel:'°',    nash:'2°',  tonic:false },
+  { id:'dh-i',      deg:'i',     semi:0,  int:[0,3,7],     quality:'minor',  qLabel:'m',    nash:'1m',  tonic:true  },
+  { id:'dh-bIII',   deg:'♭III',  semi:3,  int:[0,4,7,11],  quality:'maj7',   qLabel:'Maj7', nash:'♭3',  tonic:false },
+  { id:'dh-iv',     deg:'iv',    semi:5,  int:[0,3,7],     quality:'minor',  qLabel:'m',    nash:'4m',  tonic:false },
+  { id:'dh-bVI',    deg:'♭VI',   semi:8,  int:[0,4,7],     quality:'major',  qLabel:'M',    nash:'♭6',  tonic:false },
+  { id:'dh-V',      deg:'V',     semi:7,  int:[0,4,7,10],  quality:'dom7',   qLabel:'7',    nash:'5',   tonic:false },
+  { id:'dh-viidim', deg:'#vii°', semi:11, int:[0,3,6,9],   quality:'dim7',   qLabel:'°7',   nash:'7°',  tonic:false },
+  { id:'dh-iidim',  deg:'ii°',   semi:2,  int:[0,3,6],     quality:'dim',    qLabel:'°',    nash:'2°',  tonic:false },
 ];
 
-// Secondary diminished (top): fully-diminished 7th a semitone below each main chord
-// Targets: i (semi 0), iv (5), ♭VI (8), V (7) → dim7 root = target - 1
-const DH_SECDIM_TOP = [
-  { id:'dh-sd-i',   deg:'°7/i',   targetSemi:0,  resolveId:'dh-i',   int:[0,3,6,9], quality:'dim7', qLabel:'°7', nash:'°7/1' },
-  { id:'dh-sd-iv',  deg:'°7/iv',  targetSemi:5,  resolveId:'dh-iv',  int:[0,3,6,9], quality:'dim7', qLabel:'°7', nash:'°7/4' },
-  { id:'dh-sd-bVI', deg:'°7/♭VI', targetSemi:8,  resolveId:'dh-bVI', int:[0,3,6,9], quality:'dim7', qLabel:'°7', nash:'°7/♭6' },
-  { id:'dh-sd-V',   deg:'°7/V',   targetSemi:7,  resolveId:'dh-V',   int:[0,3,6,9], quality:'dim7', qLabel:'°7', nash:'°7/5' },
+// Top row: 4 secondary diminished chords all resolving to V, + Neapolitan (♭II Maj7)
+// Dim7 roots relative to tonic: +6, +9, +0, +3 (enharmonic spellings of the same chord)
+// They all resolve to V (semi=7), so resolveId = 'dh-V' for all
+const DH_SECDIM_V = [
+  { id:'dh-sv-1', deg:'°7', semiOffset:6,  resolveId:'dh-V', int:[0,3,6,9], quality:'dim7', qLabel:'°7', nash:'vii°7/V' },
+  { id:'dh-sv-2', deg:'°7', semiOffset:9,  resolveId:'dh-V', int:[0,3,6,9], quality:'dim7', qLabel:'°7', nash:'vii°7/V' },
+  { id:'dh-sv-3', deg:'°7', semiOffset:0,  resolveId:'dh-V', int:[0,3,6,9], quality:'dim7', qLabel:'°7', nash:'vii°7/V' },
+  { id:'dh-sv-4', deg:'°7', semiOffset:3,  resolveId:'dh-V', int:[0,3,6,9], quality:'dim7', qLabel:'°7', nash:'vii°7/V' },
+  // Neapolitan: ♭II Maj7 — also resolves to V, placed at end of this row
+  { id:'dh-neap', deg:'♭II', semiOffset:1, resolveId:'dh-V', int:[0,4,7,11], quality:'maj7', qLabel:'Maj7', nash:'♭2', isNeapolitan:true },
 ];
 
-// Secondary diminished (bottom): dim7 a semitone below iv and ♭VI (resolves up)
+// Bottom row: 4 secondary diminished chords resolving to iv or ♭VI
+// PDF in key A: G°, A#°, C#°, E° → all lead up to Dm(iv) or FM(♭VI)
+// Relative to tonic A: G=10, A#=1(Bb), C#=4, E=7... but wait that's V
+// Let me re-read: PDF shows G dim, Ab/A# dim, Cb/C# dim, E dim
+// These are semitone below iv(D=5→root=4=C#), semitone below ♭VI(F=8→root=7... E)
+// Actually from symmetry: same dim7 chord, 4 spellings, target is iv AND ♭VI
+// roots in A: G(10), A#(1), C#(4), E(7) — these are ti+10, +1, +4, +7
 const DH_SECDIM_BOT = [
-  { id:'dh-sb-iv',  deg:'°7/iv',  targetSemi:5,  resolveId:'dh-iv',  int:[0,3,6,9], quality:'dim7', qLabel:'°7', nash:'°7/4b' },
-  { id:'dh-sb-bVI', deg:'°7/♭VI', targetSemi:8,  resolveId:'dh-bVI', int:[0,3,6,9], quality:'dim7', qLabel:'°7', nash:'°7/♭6b' },
-  { id:'dh-sb-i2',  deg:'°7/i',   targetSemi:0,  resolveId:'dh-i',   int:[0,3,6,9], quality:'dim7', qLabel:'°7', nash:'°7/1b' },
-  { id:'dh-sb-V2',  deg:'°7/V',   targetSemi:7,  resolveId:'dh-V',   int:[0,3,6,9], quality:'dim7', qLabel:'°7', nash:'°7/5b' },
-];
-
-// Neapolitan: ♭II Maj7 (semi = 1 above tonic)
-const DH_NEAPOLITAN = [
-  { id:'dh-neap', deg:'♭II', semi:1, int:[0,4,7,11], quality:'maj7', qLabel:'Maj7', nash:'♭2', tonic:false },
+  { id:'dh-sb-1', deg:'°7', semiOffset:10, resolveId:'dh-iv',  int:[0,3,6,9], quality:'dim7', qLabel:'°7', nash:'vii°7/iv'  },
+  { id:'dh-sb-2', deg:'°7', semiOffset:1,  resolveId:'dh-bVI', int:[0,3,6,9], quality:'dim7', qLabel:'°7', nash:'vii°7/♭VI' },
+  { id:'dh-sb-3', deg:'°7', semiOffset:4,  resolveId:'dh-iv',  int:[0,3,6,9], quality:'dim7', qLabel:'°7', nash:'vii°7/iv'  },
+  { id:'dh-sb-4', deg:'°7', semiOffset:7,  resolveId:'dh-bVI', int:[0,3,6,9], quality:'dim7', qLabel:'°7', nash:'vii°7/♭VI' },
 ];
 
 export const MODE_DARK_HARMONY = {
@@ -141,90 +122,57 @@ export const MODE_DARK_HARMONY = {
   scale: 'naturalMinor',
   rows: [
     {
-      id:        'dh-top',
-      label:     'Secondary Diminished',
-      tag:       'Sec. Diminished',
-      hint:      '°7 — resolves down',
-      loopLabel: '↓ only',
-      canLoop:   false,
-      style:     'secondary',
-      chords:    DH_SECDIM_TOP,
-      rootCalc:  (cd, ti) => (ti + cd.targetSemi - 1 + 12) % 12,
+      id: 'dh-top', tag: 'Sec. Dim. V + Neapolitan',
+      hint: '°7 / ♭II — all resolve to V',
+      loopLabel: '↓ to V', canLoop: false, style: 'secondary',
+      chords:   DH_SECDIM_V,
+      rootCalc: (cd, ti) => (ti + cd.semiOffset) % 12,
     },
     {
-      id:        'dh-neap',
-      label:     'Neapolitan',
-      tag:       'Neapolitan',
-      hint:      '♭II — follow the arrow',
-      loopLabel: '↓ only',
-      canLoop:   false,
-      style:     'neapolitan',
-      chords:    DH_NEAPOLITAN,
-      rootCalc:  (cd, ti) => (ti + cd.semi) % 12,
+      id: 'dh-main', tag: 'Main Chords',
+      hint: 'Mix freely — start with i, iv, ♭VI or V',
+      loopLabel: '⟳ free', canLoop: true, style: 'main',
+      chords:   DH_MAIN,
+      rootCalc: (cd, ti) => (ti + cd.semi) % 12,
     },
     {
-      id:        'dh-main',
-      label:     'Main Chords',
-      tag:       'Main Chords',
-      hint:      'Mix freely',
-      loopLabel: '⟳ free',
-      canLoop:   true,
-      style:     'main',
-      chords:    DH_MAIN,
-      rootCalc:  (cd, ti) => (ti + cd.semi) % 12,
-    },
-    {
-      id:        'dh-bot',
-      label:     'Secondary Diminished iv, ♭VI',
-      tag:       'Sec. Dim. iv, ♭VI',
-      hint:      '°7 — resolves up',
-      loopLabel: '↑ only',
-      canLoop:   false,
-      style:     'modal',
-      chords:    DH_SECDIM_BOT,
-      rootCalc:  (cd, ti) => (ti + cd.targetSemi - 1 + 12) % 12,
+      id: 'dh-bot', tag: 'Sec. Dim. iv · ♭VI',
+      hint: '°7 — resolves up to iv or ♭VI',
+      loopLabel: '↑ only', canLoop: false, style: 'modal',
+      chords:   DH_SECDIM_BOT,
+      rootCalc: (cd, ti) => (ti + cd.semiOffset) % 12,
     },
   ],
   isDimmed(chordId, rowId, lastSelected) {
     if (!lastSelected) return false;
     const { id: lastId, row: lastRow } = lastSelected;
 
-    // After a top secondary dim → only its target in main is lit
+    // After top row (sec.dim V or Neapolitan) → only V is lit in main
     if (lastRow === 'dh-top') {
-      const sec = DH_SECDIM_TOP.find(s => s.id === lastId);
-      if (rowId === 'dh-main') return sec ? chordId !== sec.resolveId : true;
-      if (rowId === 'dh-top')  return true;
-      if (rowId === 'dh-bot')  return true;
-      return false;
+      if (rowId === 'dh-main') return chordId !== 'dh-V';
+      return true; // dim top → top or bottom not allowed
     }
-    // After a bottom secondary dim → only its target in main is lit
+    // After bottom sec.dim → only iv or ♭VI lit in main
     if (lastRow === 'dh-bot') {
       const sec = DH_SECDIM_BOT.find(s => s.id === lastId);
       if (rowId === 'dh-main') return sec ? chordId !== sec.resolveId : true;
-      if (rowId === 'dh-top')  return true;
-      if (rowId === 'dh-bot')  return true;
-      return false;
-    }
-    // After Neapolitan → only i and V are accessible
-    if (lastRow === 'dh-neap') {
-      if (rowId === 'dh-main') return !['dh-i','dh-V'].includes(chordId);
       return true;
     }
-    // After main → neapolitan accessible from any chord; bottom accessible from i and V
+    // After main → top accessible from any; bottom accessible from any
     if (lastRow === 'dh-main') {
-      if (rowId === 'dh-bot')  return !['dh-i','dh-V'].includes(lastId);
-      return false;
+      return false; // all rows accessible from main
     }
     return false;
   },
   arrows: [
-    { type: 'row-to-row-targeted', fromRow: 'dh-top', toRow: 'dh-main', style: 'teal' },
-    { type: 'gateway-down', fromRow: 'dh-main', toRow: 'dh-bot', gatewayIds: ['dh-i','dh-V'], style: 'amber' },
+    // All top chords point down to V
+    { type: 'row-to-fixed-target', fromRow: 'dh-top', targetId: 'dh-V', style: 'teal' },
+    // Bottom chords point up to their targets
+    { type: 'row-to-row-targeted', fromRow: 'dh-bot', toRow: 'dh-main', style: 'amber' },
   ],
 };
 
 // ── Mode registry ─────────────────────────────────────────────────────────────
-// Add new modes here — board.js and app.js read this registry.
 export const MODES = [
   MODE_PROGRESSIONS,
   MODE_DARK_HARMONY,

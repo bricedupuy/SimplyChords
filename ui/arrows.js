@@ -63,6 +63,22 @@ export function drawArrows() {
                   'rgba(255,255,255,0.2)';
     const marker = `arr-${arrowDef.style}`;
 
+    if (arrowDef.type === 'row-to-fixed-target') {
+      // All chords in fromRow point to a single target chord
+      const fromRow = mode.rows.find(r => r.id === arrowDef.fromRow);
+      if (!fromRow) continue;
+      const toR = tileRect(arrowDef.targetId);
+      if (!toR) continue;
+      fromRow.chords.forEach(cd => {
+        const fromR = tileRect(cd.id);
+        if (!fromR) return;
+        const x1 = fromR.cx, y1 = fromR.bottom + 2;
+        const x2 = toR.cx,   y2 = toR.top - 2;
+        const cx = (x1 + x2) / 2 + (x2 - x1) * 0.1;
+        html += `<path d="M${x1},${y1} Q${cx},${(y1+y2)/2} ${x2},${y2}" fill="none" stroke="${color}" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#${marker})"/>`;
+      });
+    }
+
     if (arrowDef.type === 'row-to-row-targeted') {
       // One arrow per chord in fromRow pointing to its target in toRow
       const fromRow = mode.rows.find(r => r.id === arrowDef.fromRow);
