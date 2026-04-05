@@ -18,14 +18,9 @@
 </head>
 <body>
 
-<!-- ── Top bar (always visible) ────────────────────────────────────────────── -->
+<!-- ── Top bar ──────────────────────────────────────────────────────────────── -->
 <div class="topbar">
   <span class="topbar-title">Chord Board</span>
-
-  <div class="topbar-keys">
-    <div class="key-buttons" id="key-buttons"></div>
-  </div>
-
   <div class="topbar-actions">
     <button id="reset-path" class="icon-btn" title="Reset path">
       <i data-lucide="rotate-ccw"></i>
@@ -42,6 +37,12 @@
       <i data-lucide="sliders-horizontal"></i>
     </button>
   </div>
+</div>
+
+<!-- ── Key row (always visible) ─────────────────────────────────────────────── -->
+<div class="key-row">
+  <span class="ctrl-label">Key</span>
+  <div class="key-buttons" id="key-buttons"></div>
 </div>
 
 <!-- ── Settings drawer ──────────────────────────────────────────────────────── -->
@@ -80,7 +81,7 @@
 <!-- ── Board ────────────────────────────────────────────────────────────────── -->
 <div class="board">
 
-  <div class="row-block">
+  <div class="row-block row-block-secondary">
     <div class="row-header">
       <span class="row-tag secondary">Secondary Dominants</span>
       <span class="row-hint">V7 — resolves down</span>
@@ -91,7 +92,7 @@
 
   <div class="board-divider" data-label="↓ resolves to main"></div>
 
-  <div class="row-block">
+  <div class="row-block row-block-main">
     <div class="row-header">
       <span class="row-tag main">Main Chords</span>
       <span class="row-hint">Mix freely</span>
@@ -102,7 +103,7 @@
 
   <div class="board-divider" data-label="↑ return via I, IV or V"></div>
 
-  <div class="row-block">
+  <div class="row-block row-block-modal">
     <div class="row-header">
       <span class="row-tag modal">Modal Interchange</span>
       <span class="row-hint">Parallel minor — via I, IV, V</span>
@@ -138,7 +139,7 @@
   </div>
 </div>
 
-<!-- ── Detail panel overlay ──────────────────────────────────────────────────── -->
+<!-- ── Detail panel ──────────────────────────────────────────────────────────── -->
 <div id="detail-panel-overlay">
   <div id="detail-panel">
     <button id="dp-close"><i data-lucide="x"></i></button>
@@ -153,193 +154,6 @@
 
     <button class="dp-play-btn" id="dp-play">
       <i data-lucide="play"></i> Play chord
-    </button>
-
-    <div class="dp-section-label">Intervals</div>
-    <div class="pills" id="dp-intervals"></div>
-
-    <div class="dp-section-label">Notes</div>
-    <div class="pills" id="dp-notes"></div>
-  </div>
-</div>
-
-<script type="module" src="app.js"></script>
-</body>
-</html>
-
-<!-- ── Top bar (always visible) ────────────────────────────────────────────── -->
-<div class="topbar">
-  <span class="topbar-title">Chord Board</span>
-
-  <!-- Key selector inline in topbar -->
-  <div class="topbar-keys">
-    <div class="key-buttons" id="key-buttons"></div>
-  </div>
-
-  <!-- Right actions -->
-  <div class="topbar-actions">
-    <button id="reset-path" class="icon-btn" title="Reset path">
-      <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M2 8a6 6 0 1 0 1.5-3.9"/>
-        <path d="M2 3.5V8h4.5"/>
-      </svg>
-    </button>
-    <button id="theme-toggle" class="icon-btn" title="Toggle theme">
-      <!-- Sun icon (shown in dark mode to switch to light) -->
-      <svg class="icon-sun" viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-        <circle cx="8" cy="8" r="3"/>
-        <line x1="8" y1="1" x2="8" y2="2.5"/>
-        <line x1="8" y1="13.5" x2="8" y2="15"/>
-        <line x1="1" y1="8" x2="2.5" y2="8"/>
-        <line x1="13.5" y1="8" x2="15" y2="8"/>
-        <line x1="3.05" y1="3.05" x2="4.1" y2="4.1"/>
-        <line x1="11.9" y1="11.9" x2="12.95" y2="12.95"/>
-        <line x1="12.95" y1="3.05" x2="11.9" y2="4.1"/>
-        <line x1="4.1" y1="11.9" x2="3.05" y2="12.95"/>
-      </svg>
-      <!-- Moon icon (shown in light mode to switch to dark) -->
-      <svg class="icon-moon" viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M13.5 10A6 6 0 0 1 6 2.5a6 6 0 1 0 7.5 7.5z"/>
-      </svg>
-    </button>
-    <button id="sound-toggle" class="icon-btn active" title="Sound on/off">
-      <!-- Speaker on -->
-      <svg class="icon-sound-on" viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 6H1v4h2l4 3V3L3 6z"/>
-        <path d="M11 5a4 4 0 0 1 0 6"/>
-        <path d="M13 3a7 7 0 0 1 0 10"/>
-      </svg>
-      <!-- Speaker off -->
-      <svg class="icon-sound-off" viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 6H1v4h2l4 3V3L3 6z"/>
-        <line x1="10" y1="6" x2="15" y2="11"/>
-        <line x1="15" y1="6" x2="10" y2="11"/>
-      </svg>
-    </button>
-    <button id="settings-toggle" class="icon-btn" title="Settings" aria-expanded="false">
-      <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-        <circle cx="8" cy="8" r="2"/>
-        <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M12.95 3.05l-1.41 1.41M4.46 11.54l-1.41 1.41"/>
-      </svg>
-    </button>
-  </div>
-</div>
-
-<!-- ── Settings drawer (collapsed by default) ──────────────────────────────── -->
-<div class="settings-drawer" id="settings-drawer">
-  <div class="settings-inner">
-    <div class="ctrl-group">
-      <span class="ctrl-label">Instrument</span>
-      <div class="pill-group">
-        <button class="pill-btn active" data-instrument="piano">Piano</button>
-        <button class="pill-btn" data-instrument="guitar">Guitar</button>
-        <button class="pill-btn" data-instrument="ukulele">Ukulele</button>
-      </div>
-    </div>
-    <div class="ctrl-group" id="format-group">
-      <span class="ctrl-label">Names</span>
-      <div class="pill-group">
-        <button class="pill-btn active" data-format="english">English</button>
-        <button class="pill-btn" data-format="solfege">Solfège</button>
-        <button class="pill-btn" data-format="nashville">Nashville</button>
-      </div>
-    </div>
-    <div class="ctrl-group">
-      <span class="ctrl-label">View</span>
-      <div class="pill-group">
-        <button class="pill-btn active" data-viewmode="name">Name</button>
-        <button class="pill-btn" data-viewmode="diagram">Diagram</button>
-      </div>
-    </div>
-    <div class="ctrl-group">
-      <span class="ctrl-label">Mood</span>
-      <div id="mood-buttons" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
-    </div>
-  </div>
-</div>
-
-<!-- ── Board ────────────────────────────────────────────────────────────────── -->
-<div class="board">
-
-  <div class="row-block">
-    <div class="row-header">
-      <span class="row-tag secondary">Secondary Dominants</span>
-      <span class="row-hint">V7 — resolves down</span>
-      <span class="loop-badge">↓ only</span>
-    </div>
-    <div class="chord-row" id="row-secondary"></div>
-  </div>
-
-  <div class="board-divider" data-label="↓ resolves to main"></div>
-
-  <div class="row-block">
-    <div class="row-header">
-      <span class="row-tag main">Main Chords</span>
-      <span class="row-hint">Mix freely</span>
-      <span class="loop-badge can-loop">⟳ free</span>
-    </div>
-    <div class="chord-row" id="row-main"></div>
-  </div>
-
-  <div class="board-divider" data-label="↑ return via I, IV or V"></div>
-
-  <div class="row-block">
-    <div class="row-header">
-      <span class="row-tag modal">Modal Interchange</span>
-      <span class="row-hint">Parallel minor — enter via I, IV, V</span>
-      <span class="loop-badge">↕ I/IV/V</span>
-    </div>
-    <div class="chord-row" id="row-modal"></div>
-  </div>
-
-</div>
-
-<!-- ── Progression tray ──────────────────────────────────────────────────────── -->
-<div class="prog-tray">
-  <div class="prog-tray-header">
-    <span class="prog-tray-title">Progression</span>
-    <div class="prog-tray-actions">
-      <button id="prog-play" class="prog-action-btn" disabled>
-        <svg viewBox="0 0 12 12" width="10" height="10" fill="currentColor"><polygon points="2,1 10,6 2,11"/></svg>
-        Play
-      </button>
-      <button id="prog-undo" class="prog-action-btn">
-        <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4H7a3 3 0 0 1 0 6H4"/><path d="M2 2l-2 2 2 2"/></svg>
-        Undo
-      </button>
-      <button id="prog-clear" class="prog-action-btn prog-clear-btn">
-        <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
-        Clear
-      </button>
-    </div>
-  </div>
-  <div class="prog-steps-wrap">
-    <div id="prog-steps"></div>
-  </div>
-  <div class="prog-export-wrap">
-    <span class="prog-export-label">Export:</span>
-    <span id="prog-export" class="prog-export-text"></span>
-  </div>
-</div>
-
-<!-- ── Detail panel overlay ──────────────────────────────────────────────────── -->
-<div id="detail-panel-overlay">
-  <div id="detail-panel">
-    <button id="dp-close">
-      <svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="1" y1="1" x2="11" y2="11"/><line x1="11" y1="1" x2="1" y2="11"/></svg>
-    </button>
-    <div id="dp-chord-name">C</div>
-    <div id="dp-chord-meta">I — Major</div>
-
-    <div class="dp-section-label">Piano</div>
-    <div id="dp-piano"></div>
-
-    <div class="dp-section-label" id="dp-fret-label" style="display:none">Guitar</div>
-    <div id="dp-fret-wrap" style="display:none"></div>
-
-    <button class="dp-play-btn" id="dp-play">
-      <svg viewBox="0 0 12 12" width="11" height="11" fill="currentColor"><polygon points="2,1 10,6 2,11"/></svg>
-      Play chord
     </button>
 
     <div class="dp-section-label">Intervals</div>

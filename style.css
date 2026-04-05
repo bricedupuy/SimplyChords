@@ -66,21 +66,25 @@ body {
   position: sticky; top: 0; z-index: 50;
   background: var(--bg2);
   border-bottom: 1px solid var(--border);
-  padding: 0.5rem 0.75rem 0.5rem 1rem;
-  display: flex; align-items: center; gap: 8px;
+  padding: 0.5rem 0.75rem;
   padding-top: max(0.5rem, env(safe-area-inset-top));
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
 }
 .topbar-title {
-  font-size: 14px; font-weight: 600; letter-spacing: -0.02em;
-  color: var(--text); white-space: nowrap; margin-right: 4px;
-}
-.topbar-keys {
-  flex: 1; overflow: hidden;
-  display: flex; align-items: center;
+  font-size: 14px; font-weight: 600; letter-spacing: -0.02em; color: var(--text);
 }
 .topbar-actions {
-  display: flex; gap: 4px; align-items: center; flex-shrink: 0;
+  display: flex; gap: 4px; align-items: center;
 }
+
+/* ── Key row ─────────────────────────────────────────────────────────────────── */
+.key-row {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  display: flex; align-items: center; gap: 8px;
+}
+.key-row .ctrl-label { flex-shrink: 0; }
 
 /* ── Icon buttons ───────────────────────────────────────────────────────────── */
 .icon-btn {
@@ -142,11 +146,10 @@ body {
 .pill-btn.active { background: var(--bg); color: var(--text); box-shadow: 0 0 0 1px var(--border-md); }
 
 /* ── Key selector ───────────────────────────────────────────────────────────── */
-.key-buttons { display: flex; gap: 3px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-.key-buttons::-webkit-scrollbar { display: none; }
+.key-buttons { display: flex; gap: 4px; flex-wrap: wrap; }
 .key-btn {
   font-size: 11px; font-weight: 500; font-family: 'DM Mono', monospace;
-  padding: 3px 7px; min-width: 28px; text-align: center; flex-shrink: 0;
+  padding: 4px 9px; min-width: 30px; text-align: center; flex-shrink: 0;
   border-radius: 6px; border: 1px solid var(--border);
   background: transparent; color: var(--text3);
   cursor: pointer; transition: all 0.12s;
@@ -169,12 +172,19 @@ body {
 .mood-desc { font-size: 9px; opacity: 0.7; }
 
 /* ── Board ──────────────────────────────────────────────────────────────────── */
-.board { padding: 1rem 1.5rem 2rem; display: flex; flex-direction: column; gap: 8px; }
+.board { padding: 0.75rem 0.75rem 1.5rem; display: flex; flex-direction: column; gap: 6px; }
 
 .row-block { display: flex; flex-direction: column; gap: 4px; }
+
+/* Main chords row gets extra vertical breathing room */
+.row-block-main { margin: 4px 0; }
+.row-block-secondary .chord-tile,
+.row-block-modal .chord-tile { opacity: 0.88; }
+.row-block-secondary:hover .chord-tile,
+.row-block-modal:hover .chord-tile { opacity: 1; }
+
 .row-header {
-  display: flex; align-items: center; gap: 8px;
-  padding: 0 0 2px 0;
+  display: flex; align-items: center; gap: 8px; padding: 0 0 3px 0;
 }
 .row-tag {
   font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
@@ -208,7 +218,25 @@ body {
 .chord-tile:active { transform: scale(0.96); }
 
 .tile-main { background: var(--bg2); }
-.tile-main:hover { border-color: var(--blue-bdr); }
+.tile-main:hover { border-color: var(--blue-bdr); background: var(--bg3); }
+
+/* Main tiles are larger and more prominent */
+.row-block-main .chord-tile {
+  padding-top: 12px;
+  border-color: var(--border-md);
+}
+.row-block-main .tile-chord { font-size: 18px; }
+.row-block-main .tile-deg   { font-size: 10px; margin-bottom: 2px; }
+.row-block-main .tile-quality { font-size: 10px; padding-bottom: 8px; }
+
+/* Secondary and modal tiles are slightly smaller / quieter */
+.row-block-secondary .chord-tile,
+.row-block-modal .chord-tile { padding-top: 6px; }
+.row-block-secondary .tile-chord,
+.row-block-modal .tile-chord { font-size: 13px; }
+.row-block-secondary .tile-quality,
+.row-block-modal .tile-quality { padding-bottom: 4px; min-height: 14px; }
+
 .tile-secondary { background: rgba(61,204,168,0.04); border-color: var(--teal-bdr); }
 .tile-secondary:hover { background: rgba(61,204,168,0.09); }
 .tile-modal { background: rgba(232,168,74,0.04); border-color: var(--amber-bdr); }
@@ -334,7 +362,7 @@ body {
 .prog-tray {
   border-top: 1px solid var(--border);
   background: var(--bg2);
-  padding: 0.75rem 1.5rem 1rem;
+  padding: 0.75rem 0.75rem 1rem;
 }
 .prog-tray-header {
   display: flex; align-items: center; gap: 10px; margin-bottom: 0.6rem;
