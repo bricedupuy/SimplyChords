@@ -82,7 +82,7 @@ export function formatRoot(noteIdx, rootKey, format) {
 export function formatChordName(noteIdx, quality, rootKey, format, nashvilleDeg) {
   if (format === 'nashville') return nashvilleDeg;
   const root = formatRoot(noteIdx, rootKey, format);
-  const suffixes = { major:'', minor:'m', dom7:'7', maj7:'M7', min7:'m7', dim:'°', halfdim:'m7♭5', aug:'+' };
+  const suffixes = { major:'', minor:'m', dom7:'7', maj7:'M7', min7:'m7', dim:'°', halfdim:'m7♭5', aug:'+', dim7:'°7' };
   return root + (suffixes[quality] || '');
 }
 

@@ -45,6 +45,11 @@
   <div class="key-buttons" id="key-buttons"></div>
 </div>
 
+<!-- ── Mode switcher ─────────────────────────────────────────────────────────── -->
+<div class="mode-switcher-bar">
+  <div id="mode-switcher"></div>
+</div>
+
 <!-- ── Settings drawer ──────────────────────────────────────────────────────── -->
 <div class="settings-drawer" id="settings-drawer">
   <div class="settings-inner">
@@ -78,41 +83,8 @@
   </div>
 </div>
 
-<!-- ── Board ────────────────────────────────────────────────────────────────── -->
-<div class="board">
-
-  <div class="row-block row-block-secondary">
-    <div class="row-header">
-      <span class="row-tag secondary">Secondary Dominants</span>
-      <span class="row-hint">V7 — resolves down</span>
-      <span class="loop-badge">↓ only</span>
-    </div>
-    <div class="chord-row" id="row-secondary"></div>
-  </div>
-
-  <div class="board-divider" data-label="↓ resolves to main"></div>
-
-  <div class="row-block row-block-main">
-    <div class="row-header">
-      <span class="row-tag main">Main Chords</span>
-      <span class="row-hint">Mix freely</span>
-      <span class="loop-badge can-loop">⟳ free</span>
-    </div>
-    <div class="chord-row" id="row-main"></div>
-  </div>
-
-  <div class="board-divider" data-label="↑ return via I, IV or V"></div>
-
-  <div class="row-block row-block-modal">
-    <div class="row-header">
-      <span class="row-tag modal">Modal Interchange</span>
-      <span class="row-hint">Parallel minor — via I, IV, V</span>
-      <span class="loop-badge">↕ I/IV/V</span>
-    </div>
-    <div class="chord-row" id="row-modal"></div>
-  </div>
-
-</div>
+<!-- ── Board (populated dynamically by active mode) ──────────────────────────── -->
+<div class="board"></div>
 
 <!-- ── Progression tray ──────────────────────────────────────────────────────── -->
 <div class="prog-tray">

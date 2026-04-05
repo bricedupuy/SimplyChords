@@ -1,8 +1,8 @@
 // ── ui/board.js ────────────────────────────────────────────────────────────────
-// Renders the three-row chord board and handles tile interactions.
+// Mode-aware board renderer. All row/chord data comes from the active mode.
 
 import {
-  CHROMATIC, DIATONIC, SECONDARY, MODAL,
+  CHROMATIC,
   formatChordName, scaleNotes, preferredNote, INTERVAL_NAMES
 } from '../data/theory.js';
 import { voicingKey } from '../data/instruments.js';
@@ -16,59 +16,29 @@ export function setStateRef(s) { _state = s; }
 
 function rootMidi(noteIdx) { return 12 + 4 * 12 + noteIdx; }
 
-// ── Path dimming logic ────────────────────────────────────────────────────────
-const GATEWAY_IDS = new Set(['I', 'IV', 'V']);
-
-function isDimmed(chordId, row) {
-  const last = _state.lastSelected;
-  if (!last) return false;
-
-  const { id: lastId, row: lastRow } = last;
-
-  if (lastRow === 'secondary') {
-    const sec = SECONDARY.find(s => s.id === lastId);
-    if (!sec) return false;
-    if (row === 'main')      return chordId !== sec.targetId;
-    if (row === 'secondary') return true;
-    if (row === 'modal')     return true;
-  }
-
-  if (lastRow === 'main') {
-    if (row === 'modal') return !GATEWAY_IDS.has(lastId);
-    return false;
-  }
-
-  if (lastRow === 'modal') {
-    if (row === 'main')      return !GATEWAY_IDS.has(chordId);
-    if (row === 'secondary') return true;
-    if (row === 'modal')     return false;
-  }
-
-  return false;
-}
-
 // ── Build tile ────────────────────────────────────────────────────────────────
-function buildTile(noteIdx, chordDef, rowClass, opts = {}) {
+function buildTile(noteIdx, chordDef, rowDef, opts = {}) {
   const { moodHighlight = false } = opts;
   const st = _state;
+  const mode = st.activeMode;
   const rootKey = CHROMATIC[st.tonicIdx];
   const chordName = formatChordName(noteIdx, chordDef.quality, rootKey, st.chordFormat, chordDef.nash);
-  const dimmed = isDimmed(chordDef.id, rowClass);
+  const dimmed = mode.isDimmed(chordDef.id, rowDef.id, st.lastSelected);
 
   const tile = document.createElement('div');
   tile.className = [
     'chord-tile',
-    `tile-${rowClass}`,
-    dimmed      ? 'tile-dimmed'   : '',
-    moodHighlight ? 'tile-mood'   : '',
-    chordDef.tonic ? 'tile-tonic' : '',
+    `tile-${rowDef.style}`,
+    dimmed         ? 'tile-dimmed'   : '',
+    moodHighlight  ? 'tile-mood'     : '',
+    chordDef.tonic ? 'tile-tonic'    : '',
     st.lastSelected?.id === chordDef.id ? 'tile-selected' : '',
   ].filter(Boolean).join(' ');
 
-  tile.dataset.chordId  = chordDef.id;
-  tile.dataset.row      = rowClass;
-  tile.dataset.noteIdx  = noteIdx;
-  tile.dataset.quality  = chordDef.quality;
+  tile.dataset.chordId   = chordDef.id;
+  tile.dataset.row       = rowDef.id;
+  tile.dataset.noteIdx   = noteIdx;
+  tile.dataset.quality   = chordDef.quality;
   tile.dataset.intervals = chordDef.int.join(',');
 
   // Name view
@@ -82,7 +52,7 @@ function buildTile(noteIdx, chordDef, rowClass, opts = {}) {
   // Diagram view
   const diagramView = document.createElement('div');
   diagramView.className = 'tile-diagram-view';
-  const scaleSet = new Set(scaleNotes(st.tonicIdx));
+  const scaleSet = new Set(scaleNotes(st.tonicIdx, mode.scale));
   if (st.instrument === 'piano') {
     diagramView.innerHTML = renderPiano(noteIdx, chordDef.int, scaleSet, true, getPianoBg());
   } else {
@@ -90,7 +60,7 @@ function buildTile(noteIdx, chordDef, rowClass, opts = {}) {
     diagramView.innerHTML = renderFretboard(noteIdx, chordDef.int, scaleSet, vk, st.instrument);
   }
 
-  // ── Detail strip (full-width bottom zone, easy to tap) ───────────────────
+  // Detail strip
   const detailStrip = document.createElement('button');
   detailStrip.className = 'tile-detail-strip';
   detailStrip.title = 'Chord details';
@@ -104,13 +74,11 @@ function buildTile(noteIdx, chordDef, rowClass, opts = {}) {
   tile.appendChild(diagramView);
   tile.appendChild(detailStrip);
 
-  // Click: play + add to progression + update dimming
   tile.addEventListener('click', () => {
     if (st.soundEnabled) playChord(rootMidi(noteIdx), chordDef.int);
     addToProgression(noteIdx, chordDef);
-    st.lastSelected = { id: chordDef.id, row: rowClass };
+    st.lastSelected = { id: chordDef.id, row: rowDef.id };
     renderBoard();
-    // Pulse the re-rendered tile
     requestAnimationFrame(() => {
       const t = document.querySelector(`[data-chord-id="${chordDef.id}"]`);
       if (t) { t.classList.add('tile-playing'); setTimeout(() => t.classList.remove('tile-playing'), 350); }
@@ -120,24 +88,57 @@ function buildTile(noteIdx, chordDef, rowClass, opts = {}) {
   return tile;
 }
 
-// ── Build row ─────────────────────────────────────────────────────────────────
-function buildRow(containerId, chordDefs, rootCalc, rowClass) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  container.innerHTML = '';
-  const moodIds = _state.activeMood ? _state.activeMood.steps : [];
-  chordDefs.forEach(cd => {
-    const noteIdx = rootCalc(cd);
-    container.appendChild(buildTile(noteIdx, cd, rowClass, { moodHighlight: moodIds.includes(cd.id) }));
+// ── Build rows from mode definition ──────────────────────────────────────────
+function buildBoardRows() {
+  const mode = _state.activeMode;
+  const ti   = _state.tonicIdx;
+  const boardEl = document.querySelector('.board');
+  if (!boardEl) return;
+
+  // Clear and rebuild DOM rows to match mode
+  boardEl.innerHTML = '';
+
+  mode.rows.forEach((rowDef, idx) => {
+    // Row block
+    const rowBlock = document.createElement('div');
+    rowBlock.className = `row-block row-block-${rowDef.style}`;
+
+    const rowHeader = document.createElement('div');
+    rowHeader.className = 'row-header';
+    rowHeader.innerHTML = `
+      <span class="row-tag ${rowDef.style}">${rowDef.tag}</span>
+      <span class="row-hint">${rowDef.hint}</span>
+      <span class="loop-badge ${rowDef.canLoop ? 'can-loop' : ''}">${rowDef.loopLabel}</span>`;
+
+    const chordRow = document.createElement('div');
+    chordRow.className = 'chord-row';
+    chordRow.id = `row-${rowDef.id}`;
+
+    // Populate tiles
+    const moodIds = _state.activeMood ? _state.activeMood.steps : [];
+    rowDef.chords.forEach(cd => {
+      const noteIdx = rowDef.rootCalc(cd, ti);
+      chordRow.appendChild(buildTile(noteIdx, cd, rowDef, {
+        moodHighlight: moodIds.includes(cd.id),
+      }));
+    });
+
+    rowBlock.appendChild(rowHeader);
+    rowBlock.appendChild(chordRow);
+    boardEl.appendChild(rowBlock);
+
+    // Divider between rows (not after last)
+    if (idx < mode.rows.length - 1) {
+      const div = document.createElement('div');
+      div.className = 'board-divider';
+      boardEl.appendChild(div);
+    }
   });
 }
 
 // ── Full board render ─────────────────────────────────────────────────────────
 export function renderBoard() {
-  const ti = _state.tonicIdx;
-  buildRow('row-secondary', SECONDARY, cd => (ti + cd.resolveSemi + 7) % 12, 'secondary');
-  buildRow('row-main',      DIATONIC,  cd => (ti + cd.semi)            % 12, 'main');
-  buildRow('row-modal',     MODAL,     cd => (ti + cd.semi)            % 12, 'modal');
+  buildBoardRows();
   applyViewMode();
   requestAnimationFrame(() => drawArrows());
 }
@@ -157,7 +158,7 @@ export function applyViewMode() {
 function openDetailPanel(noteIdx, chordDef, chordName) {
   const st = _state;
   const rootKey = CHROMATIC[st.tonicIdx];
-  const scaleSet = new Set(scaleNotes(st.tonicIdx));
+  const scaleSet = new Set(scaleNotes(st.tonicIdx, st.activeMode.scale));
 
   const pianoEl = document.getElementById('dp-piano');
   pianoEl.innerHTML = '';

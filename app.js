@@ -4,6 +4,7 @@ import { renderBoard, applyViewMode, closeDetailPanel, setStateRef as boardState
 import { initControls } from './ui/controls.js';
 import { initArrows, setStateRef as arrowStateRef } from './ui/arrows.js';
 import { initProgression, setStateRef as progStateRef, renderTray } from './ui/progression.js';
+import { MODES, getModeById, MODE_PROGRESSIONS } from './data/modes.js';
 
 export const state = {
   tonicIdx:     0,
@@ -12,6 +13,7 @@ export const state = {
   viewMode:     'name',
   soundEnabled: true,
   activeMood:   null,
+  activeMode:   MODE_PROGRESSIONS,
   lastSelected: null,
   progression:  [],
 };
@@ -22,6 +24,7 @@ export function init() {
   progStateRef(state);
 
   initControls(state, onStateChange);
+  initModeSwitcher();
   initArrows();
   initProgression();
 
@@ -36,18 +39,40 @@ export function init() {
   });
 
   renderBoard();
-
-  // Init Lucide icons (runs after all dynamic content is rendered)
   if (window.lucide) window.lucide.createIcons();
+}
+
+// ── Mode switcher ─────────────────────────────────────────────────────────────
+function initModeSwitcher() {
+  const container = document.getElementById('mode-switcher');
+  if (!container) return;
+
+  MODES.forEach(mode => {
+    const btn = document.createElement('button');
+    btn.className = 'mode-btn' + (mode.id === state.activeMode.id ? ' active' : '');
+    btn.dataset.modeId = mode.id;
+    btn.innerHTML = `<i data-lucide="${mode.icon}"></i><span>${mode.label}</span>`;
+    btn.addEventListener('click', () => {
+      state.activeMode   = mode;
+      state.lastSelected = null;
+      state.progression  = [];
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      onStateChange('mode');
+      if (window.lucide) window.lucide.createIcons();
+    });
+    container.appendChild(btn);
+  });
 }
 
 function onStateChange(what) {
   if (what === 'viewmode') {
     applyViewMode();
   } else {
-    if (what === 'key') state.lastSelected = null;
+    if (what === 'key' || what === 'mode') state.lastSelected = null;
     renderBoard();
     renderTray();
+    if (window.lucide) window.lucide.createIcons();
   }
 }
 
