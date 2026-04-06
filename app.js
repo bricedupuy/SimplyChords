@@ -6,6 +6,8 @@ import { initArrows, setStateRef as arrowStateRef } from './ui/arrows.js';
 import { initProgression, setStateRef as progStateRef, renderTray } from './ui/progression.js';
 import { initDetailPanel, setStateRef as detailStateRef } from './ui/detail.js';
 import { MODES, getModeById, MODE_PROGRESSIONS } from './data/modes.js';
+import { registerSW } from './sw-manager.js';
+import { initSamplesUI } from './ui/samples.js';
 
 export const state = {
   tonicIdx:     0,
@@ -39,6 +41,10 @@ export function init() {
 
   renderBoard();
   if (window.lucide) window.lucide.createIcons();
+
+  // Service worker + sample download UI
+  registerSW();
+  initSamplesUI('samples-ui');
 }
 
 // ── Mode switcher ─────────────────────────────────────────────────────────────
