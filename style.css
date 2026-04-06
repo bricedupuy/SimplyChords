@@ -339,7 +339,40 @@ body {
   background: none; border: none; font-size: 20px; color: var(--text3); cursor: pointer;
 }
 #dp-close:hover { color: var(--text); }
-#dp-chord-name { font-size: 26px; font-weight: 600; letter-spacing: -0.03em; }
+/* ── Inversion tabs ───────────────────────────────────────────────────────────── */
+.dp-inv-tabs {
+  display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 0.75rem;
+}
+.dp-inv-tab {
+  font-size: 11px; font-weight: 500; font-family: 'DM Sans', sans-serif;
+  padding: 3px 10px; border-radius: 6px;
+  border: 1px solid var(--border-md); background: var(--bg3); color: var(--text2);
+  cursor: pointer; transition: all 0.12s;
+}
+.dp-inv-tab:hover { color: var(--text); border-color: var(--blue-bdr); }
+.dp-inv-tab.active {
+  background: var(--blue-dim); border-color: var(--blue-bdr); color: var(--blue); font-weight: 600;
+}
+
+/* ── Chord variations ────────────────────────────────────────────────────────── */
+#dp-variations { margin-bottom: 0.5rem; }
+.dp-var-group { margin-bottom: 0.75rem; }
+.dp-var-label {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 5px;
+}
+.dp-var-pills { display: flex; gap: 5px; flex-wrap: wrap; }
+.dp-var-pill {
+  display: flex; align-items: baseline; gap: 1px;
+  padding: 4px 10px; border-radius: 7px;
+  border: 1px solid var(--border-md); background: var(--bg3);
+  cursor: pointer; transition: all 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.dp-var-pill:hover { background: var(--bg4); border-color: var(--blue-bdr); }
+.dp-var-pill.active { background: var(--blue-dim); border-color: var(--blue-bdr); }
+.dp-var-root { font-size: 13px; font-weight: 600; color: var(--text); }
+.dp-var-suffix { font-size: 10px; color: var(--text2); }
 #dp-chord-meta { font-size: 12px; color: var(--text2); margin: 2px 0 1rem; }
 #dp-piano, #dp-fret-wrap { margin-bottom: 0.75rem; }
 

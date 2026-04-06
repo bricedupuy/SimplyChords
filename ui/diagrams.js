@@ -24,9 +24,11 @@ function noteMidi(noteIdx, octave = 4) {
 // compact=true → returns SVG string (tiles)
 // compact=false, interactive=true → returns a <div> with clickable SVG keys (detail panel)
 
-export function renderPiano(rootNoteIdx, intervals, scaleNoteSet, compact = false, bgColor = '#181b24', interactive = false) {
-  const W = 200, H = compact ? 60 : 80;
-  const totalWhite = 8;
+export function renderPiano(rootNoteIdx, intervals, scaleNoteSet, compact = false, bgColor = '#181b24', interactive = false, octaves = 1) {
+  const totalWhite = octaves === 2 ? 15 : 8; // C to C over 1 or 2 octaves
+  const totalKeys  = octaves === 2 ? 25 : 13; // notes to iterate
+  const W = octaves === 2 ? 340 : 200;
+  const H = compact ? 60 : 80;
   const ww = W / totalWhite;
   const wh = H;
   const bw = ww * 0.62;
@@ -46,12 +48,14 @@ export function renderPiano(rootNoteIdx, intervals, scaleNoteSet, compact = fals
 
   // ── White keys ──────────────────────────────────────────────────────────────
   let wi = 0;
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < totalKeys; i++) {
     const n = i % 12;
     if (!WHITE_ORDER.includes(n)) continue;
-    const wPos = WHITE_ORDER.indexOf(n) + (i >= 12 ? 7 : 0);
+    const octaveNum = Math.floor(i / 12);
+    const wPos = WHITE_ORDER.indexOf(n) + octaveNum * 7;
     const x = wPos * ww;
-    const isRoot  = n === rootNoteIdx % 12 && i < 12;
+    // Mark root in first octave only; chord notes across all octaves
+    const isRoot  = n === rootNoteIdx % 12 && octaveNum === 0;
     const isChord = chordNotes.has(n);
     const isScale = scaleNoteSet?.has(n) && !isChord && !isRoot;
 
@@ -69,7 +73,8 @@ export function renderPiano(rootNoteIdx, intervals, scaleNoteSet, compact = fals
     rect.setAttribute('stroke-width', 0.8);
 
     if (interactive && (isRoot || isChord)) {
-      const midi = noteMidi(rootNoteIdx) + intervals.find(iv => (rootNoteIdx + iv) % 12 === n);
+      const iv = intervals.find(iv => (rootNoteIdx + iv) % 12 === n);
+      const midi = noteMidi(rootNoteIdx, 4 + octaveNum) + (iv !== undefined ? iv % 12 : 0);
       rect.style.cursor = 'pointer';
       rect.addEventListener('click', () => playNote(midi));
       rect.addEventListener('mouseenter', () => rect.setAttribute('opacity', '0.75'));
@@ -84,7 +89,7 @@ export function renderPiano(rootNoteIdx, intervals, scaleNoteSet, compact = fals
       txt.setAttribute('x', x + ww / 2);
       txt.setAttribute('y', wh - 7);
       txt.setAttribute('text-anchor', 'middle');
-      txt.setAttribute('font-size', 7);
+      txt.setAttribute('font-size', octaves === 2 ? 6 : 7);
       txt.setAttribute('fill', labelFill);
       txt.setAttribute('font-family', 'monospace');
       txt.setAttribute('pointer-events', 'none');
@@ -105,13 +110,13 @@ export function renderPiano(rootNoteIdx, intervals, scaleNoteSet, compact = fals
   }
 
   // ── Black keys ──────────────────────────────────────────────────────────────
-  for (let i = 0; i < 13; i++) {
+  for (let i = 0; i < totalKeys; i++) {
     const n = i % 12;
     if (!BLACK_ORDER.includes(n)) continue;
+    const octaveNum = Math.floor(i / 12);
     const baseOffset = BLACK_X_OFFSET[n];
-    const octOff = i >= 12 ? 7 : 0;
-    const x = (baseOffset + octOff) * ww;
-    const isRoot  = n === rootNoteIdx % 12;
+    const x = (baseOffset + octaveNum * 7) * ww;
+    const isRoot  = n === rootNoteIdx % 12 && octaveNum === 0;
     const isChord = chordNotes.has(n);
     const isScale = scaleNoteSet?.has(n) && !isChord && !isRoot;
 
@@ -131,7 +136,7 @@ export function renderPiano(rootNoteIdx, intervals, scaleNoteSet, compact = fals
 
     if (interactive && (isRoot || isChord)) {
       const iv = intervals.find(iv => (rootNoteIdx + iv) % 12 === n);
-      const midi = noteMidi(rootNoteIdx) + iv;
+      const midi = noteMidi(rootNoteIdx, 4 + octaveNum) + (iv !== undefined ? iv % 12 : 0);
       rect.style.cursor = 'pointer';
       rect.addEventListener('click', () => playNote(midi));
       rect.addEventListener('mouseenter', () => rect.setAttribute('opacity', '0.75'));

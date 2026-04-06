@@ -3,13 +3,14 @@
 
 import {
   CHROMATIC,
-  formatChordName, scaleNotes, preferredNote, INTERVAL_NAMES
+  formatChordName, scaleNotes, preferredNote
 } from '../data/theory.js';
 import { voicingKey } from '../data/instruments.js';
 import { renderPiano, renderFretboard, getPianoBg } from './diagrams.js';
 import { playChord } from '../audio/player.js';
 import { addToProgression } from './progression.js';
 import { drawArrows } from './arrows.js';
+import { open as openDetailPanel, close as closeDetailPanel } from './detail.js';
 
 let _state = null;
 export function setStateRef(s) { _state = s; }
@@ -155,41 +156,4 @@ export function applyViewMode() {
   });
 }
 
-// ── Detail panel ─────────────────────────────────────────────────────────────
-function openDetailPanel(noteIdx, chordDef, chordName) {
-  const st = _state;
-  const rootKey = CHROMATIC[st.tonicIdx];
-  const scaleSet = new Set(scaleNotes(st.tonicIdx, st.activeMode.scale));
-
-  const pianoEl = document.getElementById('dp-piano');
-  pianoEl.innerHTML = '';
-  pianoEl.appendChild(renderPiano(noteIdx, chordDef.int, scaleSet, false, getPianoBg(), true));
-
-  const fretWrap  = document.getElementById('dp-fret-wrap');
-  const fretLabel = document.getElementById('dp-fret-label');
-  if (st.instrument !== 'piano') {
-    const vk = voicingKey(preferredNote(noteIdx, rootKey), chordDef.quality);
-    fretWrap.innerHTML = '';
-    fretWrap.appendChild(renderFretboard(noteIdx, chordDef.int, scaleSet, vk, st.instrument, true));
-    fretWrap.style.display = '';
-    if (fretLabel) { fretLabel.textContent = st.instrument[0].toUpperCase() + st.instrument.slice(1); fretLabel.style.display = ''; }
-  } else {
-    fretWrap.style.display = 'none';
-    if (fretLabel) fretLabel.style.display = 'none';
-  }
-
-  document.getElementById('dp-chord-name').textContent = chordName;
-  document.getElementById('dp-chord-meta').textContent = `${chordDef.deg} — ${chordDef.quality}`;
-  document.getElementById('dp-intervals').innerHTML =
-    chordDef.int.map(i => `<span class="pill">${INTERVAL_NAMES[i] || '+'+i}</span>`).join('');
-  document.getElementById('dp-notes').innerHTML =
-    chordDef.int.map(i => `<span class="pill">${preferredNote((noteIdx+i)%12, rootKey)}</span>`).join('');
-  document.getElementById('dp-play').onclick = () => {
-    if (st.soundEnabled) playChord(rootMidi(noteIdx), chordDef.int);
-  };
-  document.getElementById('detail-panel-overlay').classList.add('open');
-}
-
-export function closeDetailPanel() {
-  document.getElementById('detail-panel-overlay').classList.remove('open');
-}
+export { closeDetailPanel };

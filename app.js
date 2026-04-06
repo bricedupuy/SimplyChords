@@ -4,6 +4,7 @@ import { renderBoard, applyViewMode, closeDetailPanel, setStateRef as boardState
 import { initControls } from './ui/controls.js';
 import { initArrows, setStateRef as arrowStateRef } from './ui/arrows.js';
 import { initProgression, setStateRef as progStateRef, renderTray } from './ui/progression.js';
+import { initDetailPanel, setStateRef as detailStateRef } from './ui/detail.js';
 import { MODES, getModeById, MODE_PROGRESSIONS } from './data/modes.js';
 
 export const state = {
@@ -22,16 +23,13 @@ export function init() {
   boardStateRef(state);
   arrowStateRef(state);
   progStateRef(state);
+  detailStateRef(state);
 
   initControls(state, onStateChange);
   initModeSwitcher();
   initArrows();
   initProgression();
-
-  document.getElementById('dp-close')?.addEventListener('click', closeDetailPanel);
-  document.getElementById('detail-panel-overlay')?.addEventListener('click', e => {
-    if (e.target === document.getElementById('detail-panel-overlay')) closeDetailPanel();
-  });
+  initDetailPanel();
 
   document.getElementById('reset-path')?.addEventListener('click', () => {
     state.lastSelected = null;
