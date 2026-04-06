@@ -56,10 +56,10 @@ function buildTile(noteIdx, chordDef, rowDef, opts = {}) {
   diagramView.className = 'tile-diagram-view';
   const scaleSet = new Set(scaleNotes(st.tonicIdx, mode.scale));
   if (st.instrument === 'piano') {
-    diagramView.innerHTML = renderPiano(noteIdx, chordDef.int, scaleSet, true, getPianoBg());
+    diagramView.innerHTML = renderPiano(noteIdx, chordDef.int, scaleSet, true, getPianoBg(), false, 1, chordDef.quality);
   } else {
     const vk = voicingKey(preferredNote(noteIdx, rootKey), chordDef.quality);
-    diagramView.innerHTML = renderFretboard(noteIdx, chordDef.int, scaleSet, vk, st.instrument);
+    diagramView.innerHTML = renderFretboard(noteIdx, chordDef.int, scaleSet, vk, st.instrument, false, chordDef.quality);
   }
 
   // Detail strip

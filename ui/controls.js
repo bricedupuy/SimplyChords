@@ -69,31 +69,37 @@ function buildMoodBar() {
   });
 }
 
+// ── Reusable pill group binder ────────────────────────────────────────────────
+function bindPillGroup(selector, stateKey, changeEvent) {
+  document.querySelectorAll(selector).forEach(btn => {
+    if (btn.dataset[stateKey] === _state[stateKey]) btn.classList.add('active');
+    btn.addEventListener('click', () => {
+      _state[stateKey] = btn.dataset[stateKey];
+      document.querySelectorAll(selector).forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      _onStateChange(changeEvent);
+    });
+  });
+}
+
 // ── Toggle buttons ────────────────────────────────────────────────────────────
 function bindToggleButtons() {
-  // Instrument picker
-  document.querySelectorAll('[data-instrument]').forEach(btn => {
-    if (btn.dataset.instrument === _state.instrument) btn.classList.add('active');
+  bindPillGroup('[data-instrument]', 'instrument', 'instrument');
+  bindPillGroup('[data-format]',     'chordFormat', 'format');
+
+  // Chord colour mode
+  document.querySelectorAll('[data-colours]').forEach(btn => {
+    if (btn.dataset.colours === (_state.chordColours ?? 'default')) btn.classList.add('active');
     btn.addEventListener('click', () => {
-      _state.instrument = btn.dataset.instrument;
-      document.querySelectorAll('[data-instrument]').forEach(b => b.classList.remove('active'));
+      _state.chordColours = btn.dataset.colours;
+      document.documentElement.dataset.chordColours = btn.dataset.colours === 'quality' ? 'quality' : '';
+      document.querySelectorAll('[data-colours]').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      _onStateChange('instrument');
+      _onStateChange('colours');
     });
   });
 
-  // Chord format picker
-  document.querySelectorAll('[data-format]').forEach(btn => {
-    if (btn.dataset.format === _state.chordFormat) btn.classList.add('active');
-    btn.addEventListener('click', () => {
-      _state.chordFormat = btn.dataset.format;
-      document.querySelectorAll('[data-format]').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      _onStateChange('format');
-    });
-  });
-
-  // View mode
+  // View mode has extra side-effect
   document.querySelectorAll('[data-viewmode]').forEach(btn => {
     if (btn.dataset.viewmode === _state.viewMode) btn.classList.add('active');
     btn.addEventListener('click', () => {

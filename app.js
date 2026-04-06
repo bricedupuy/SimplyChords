@@ -15,6 +15,7 @@ export const state = {
   soundEnabled: true,
   activeMood:   null,
   activeMode:   MODE_PROGRESSIONS,
+  chordColours: 'default',
   lastSelected: null,
   progression:  [],
 };

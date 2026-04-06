@@ -82,7 +82,7 @@ function renderPianoSection(noteIdx, intervals) {
   if (!el) return;
   const scaleSet = new Set(scaleNotes(_state.tonicIdx, _state.activeMode?.scale ?? 'major'));
   el.innerHTML = '';
-  el.appendChild(renderPiano(noteIdx, intervals, scaleSet, false, getPianoBg(), true, 2));
+  el.appendChild(renderPiano(noteIdx, intervals, scaleSet, false, getPianoBg(), true, 2, _panelState.baseChordDef?.quality ?? 'major'));
 }
 
 // ── Fretboard section ─────────────────────────────────────────────────────────
@@ -95,7 +95,7 @@ function renderFretSection(noteIdx, chordDef) {
     const scaleSet = new Set(scaleNotes(_state.tonicIdx, _state.activeMode?.scale ?? 'major'));
     const vk = voicingKey(preferredNote(noteIdx, rootKey), chordDef.quality);
     fretWrap.innerHTML = '';
-    fretWrap.appendChild(renderFretboard(noteIdx, chordDef.int, scaleSet, vk, inst, true));
+    fretWrap.appendChild(renderFretboard(noteIdx, chordDef.int, scaleSet, vk, inst, true, chordDef.quality));
     fretWrap.style.display = '';
     if (fretLabel) { fretLabel.textContent = inst[0].toUpperCase() + inst.slice(1); fretLabel.style.display = ''; }
   } else {

@@ -25,6 +25,69 @@
   --radius-lg: 16px;
   --piano-bg:  #181b24;
   --key-stroke: rgba(255,255,255,0.5);
+
+  /* Default chord colours (blue palette) */
+  --chord-root:  #4a8fe8;
+  --chord-tone:  #91bef0;
+  --chord-label: #0d3d7a;
+}
+
+/* ── Quality colour mode ──────────────────────────────────────────────────────
+   Applied via [data-chord-colours="quality"] on <html>.
+   Each quality gets its own root/tone/label trio.                             */
+[data-chord-colours="quality"] {
+  /* major   → pink  */
+  --chord-root-major:   #e8609a;
+  --chord-tone-major:   #f0a8c8;
+  --chord-label-major:  #8b1a4a;
+
+  /* minor   → light blue */
+  --chord-root-minor:   #4ab8e8;
+  --chord-tone-minor:   #9adcf4;
+  --chord-label-minor:  #0a5a7a;
+
+  /* maj7    → pink (extended major) */
+  --chord-root-maj7:    #e8609a;
+  --chord-tone-maj7:    #f0a8c8;
+  --chord-label-maj7:   #8b1a4a;
+
+  /* min7    → light blue (extended minor) */
+  --chord-root-min7:    #4ab8e8;
+  --chord-tone-min7:    #9adcf4;
+  --chord-label-min7:   #0a5a7a;
+
+  /* dom7    → yellow/gold */
+  --chord-root-dom7:    #e8c84a;
+  --chord-tone-dom7:    #f4e09a;
+  --chord-label-dom7:   #7a5a00;
+
+  /* dim     → purple */
+  --chord-root-dim:     #9a5ae8;
+  --chord-tone-dim:     #c8a4f4;
+  --chord-label-dim:    #4a1a8a;
+
+  /* dim7    → purple */
+  --chord-root-dim7:    #9a5ae8;
+  --chord-tone-dim7:    #c8a4f4;
+  --chord-label-dim7:   #4a1a8a;
+
+  /* halfdim → purple (lighter) */
+  --chord-root-halfdim: #b47ae8;
+  --chord-tone-halfdim: #d4b0f4;
+  --chord-label-halfdim:#5a2a8a;
+
+  /* aug     → green */
+  --chord-root-aug:     #4ae8a0;
+  --chord-tone-aug:     #9af4cc;
+  --chord-label-aug:    #0a6a40;
+
+  /* sus/add → teal (neutral) */
+  --chord-root-sus2:    #3dcca8;
+  --chord-tone-sus2:    #88e4cc;
+  --chord-label-sus2:   #0a5a44;
+  --chord-root-sus4:    #3dcca8;
+  --chord-tone-sus4:    #88e4cc;
+  --chord-label-sus4:   #0a5a44;
 }
 
 [data-theme="light"] {
@@ -181,6 +244,7 @@ body {
 
 /* ── Mood bar (inside drawer) ───────────────────────────────────────────────── */
 .mood-btn {
+  font-size: 11px; padding: 4px 10px; border-radius: 20px;
   border: 1px solid var(--border-md); background: var(--bg2); color: var(--text2);
   cursor: pointer; transition: all 0.15s;
   display: flex; flex-direction: column; align-items: center;
