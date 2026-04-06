@@ -208,7 +208,16 @@ body {
 .pill-btn:hover { color: var(--text); }
 .pill-btn.active { background: var(--bg); color: var(--text); box-shadow: 0 0 0 1px var(--border-md); }
 
-/* ── Key selector ───────────────────────────────────────────────────────────── */
+/* Topbar view toggle — compact, no background track */
+.topbar-view-toggle { background: transparent; padding: 0; gap: 2px; }
+.topbar-view-toggle .pill-btn {
+  font-size: 11px; padding: 3px 9px; border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.topbar-view-toggle .pill-btn.active {
+  background: var(--bg3); color: var(--text);
+  box-shadow: none; border-color: var(--border-md);
+}
 .key-buttons { display: flex; gap: 4px; flex-wrap: wrap; }
 .key-btn {
   font-size: 11px; font-weight: 500; font-family: 'DM Mono', monospace;
@@ -546,7 +555,41 @@ body {
   letter-spacing: 0.03em;
 }
 
-/* ── Responsive ──────────────────────────────────────────────────────────────── */
+/* ── Quality colour mode — tile names ────────────────────────────────────────── */
+/* In quality colour mode, .tile-chord text takes its colour from the quality.
+   data-quality is already set on every .chord-tile by board.js.              */
+
+[data-chord-colours="quality"] .chord-tile[data-quality="major"]   .tile-chord,
+[data-chord-colours="quality"] .chord-tile[data-quality="maj7"]    .tile-chord,
+[data-chord-colours="quality"] .chord-tile[data-quality="add9"]    .tile-chord  { color: #e8609a; }
+
+[data-chord-colours="quality"] .chord-tile[data-quality="minor"]   .tile-chord,
+[data-chord-colours="quality"] .chord-tile[data-quality="min7"]    .tile-chord,
+[data-chord-colours="quality"] .chord-tile[data-quality="madd9"]   .tile-chord  { color: #4ab8e8; }
+
+[data-chord-colours="quality"] .chord-tile[data-quality="dom7"]    .tile-chord,
+[data-chord-colours="quality"] .chord-tile[data-quality="dom9"]    .tile-chord  { color: #e8c84a; }
+
+[data-chord-colours="quality"] .chord-tile[data-quality="dim"]     .tile-chord,
+[data-chord-colours="quality"] .chord-tile[data-quality="dim7"]    .tile-chord  { color: #9a5ae8; }
+
+[data-chord-colours="quality"] .chord-tile[data-quality="halfdim"] .tile-chord  { color: #b47ae8; }
+
+[data-chord-colours="quality"] .chord-tile[data-quality="aug"]     .tile-chord  { color: #4ae8a0; }
+
+[data-chord-colours="quality"] .chord-tile[data-quality="sus2"]    .tile-chord,
+[data-chord-colours="quality"] .chord-tile[data-quality="sus4"]    .tile-chord  { color: #3dcca8; }
+
+/* Tile border also picks up quality accent in colour mode */
+[data-chord-colours="quality"] .chord-tile[data-quality="major"]   ,
+[data-chord-colours="quality"] .chord-tile[data-quality="maj7"]    { border-color: rgba(232,96,154,0.35); }
+[data-chord-colours="quality"] .chord-tile[data-quality="minor"]   ,
+[data-chord-colours="quality"] .chord-tile[data-quality="min7"]    { border-color: rgba(74,184,232,0.35); }
+[data-chord-colours="quality"] .chord-tile[data-quality="dom7"]    { border-color: rgba(232,200,74,0.35); }
+[data-chord-colours="quality"] .chord-tile[data-quality="dim"]     ,
+[data-chord-colours="quality"] .chord-tile[data-quality="dim7"]    { border-color: rgba(154,90,232,0.35); }
+[data-chord-colours="quality"] .chord-tile[data-quality="halfdim"] { border-color: rgba(180,122,232,0.35); }
+[data-chord-colours="quality"] .chord-tile[data-quality="aug"]     { border-color: rgba(74,232,160,0.35); }
 @media (max-width: 640px) {
   .board, .legend, .prog-tray { padding-left: 0.75rem; padding-right: 0.75rem; }
   .tile-chord { font-size: 12px; }

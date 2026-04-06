@@ -22,6 +22,11 @@
 <div class="topbar">
   <span class="topbar-title">Chord Board</span>
   <div class="topbar-actions">
+    <!-- View mode toggle — always visible -->
+    <div class="pill-group topbar-view-toggle">
+      <button class="pill-btn active" data-viewmode="name">Chords</button>
+      <button class="pill-btn" data-viewmode="diagram">Diagrams</button>
+    </div>
     <button id="reset-path" class="icon-btn" title="Reset path">
       <i data-lucide="rotate-ccw"></i>
     </button>
@@ -67,13 +72,6 @@
         <button class="pill-btn active" data-format="english">English</button>
         <button class="pill-btn" data-format="solfege">Solfège</button>
         <button class="pill-btn" data-format="nashville">Nashville</button>
-      </div>
-    </div>
-    <div class="ctrl-group">
-      <span class="ctrl-label">View</span>
-      <div class="pill-group">
-        <button class="pill-btn active" data-viewmode="name">Name</button>
-        <button class="pill-btn" data-viewmode="diagram">Diagram</button>
       </div>
     </div>
     <div class="ctrl-group">

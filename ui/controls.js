@@ -84,8 +84,18 @@ function bindPillGroup(selector, stateKey, changeEvent) {
 
 // ── Toggle buttons ────────────────────────────────────────────────────────────
 function bindToggleButtons() {
-  bindPillGroup('[data-instrument]', 'instrument', 'instrument');
-  bindPillGroup('[data-format]',     'chordFormat', 'format');
+  bindPillGroup('[data-instrument]', 'instrument',  'instrument');
+
+  // Format picker: dataset key is 'format', state key is 'chordFormat'
+  document.querySelectorAll('[data-format]').forEach(btn => {
+    if (btn.dataset.format === _state.chordFormat) btn.classList.add('active');
+    btn.addEventListener('click', () => {
+      _state.chordFormat = btn.dataset.format;
+      document.querySelectorAll('[data-format]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      _onStateChange('format');
+    });
+  });
 
   // Chord colour mode
   document.querySelectorAll('[data-colours]').forEach(btn => {
@@ -99,19 +109,17 @@ function bindToggleButtons() {
     });
   });
 
-  // View mode has extra side-effect
+  // View mode (in topbar — binds all [data-viewmode] elements including topbar)
   document.querySelectorAll('[data-viewmode]').forEach(btn => {
     if (btn.dataset.viewmode === _state.viewMode) btn.classList.add('active');
     btn.addEventListener('click', () => {
       _state.viewMode = btn.dataset.viewmode;
       document.querySelectorAll('[data-viewmode]').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      syncFormatGroupVisibility();
+      // Re-apply active to all matching buttons (topbar has them too)
+      document.querySelectorAll(`[data-viewmode="${_state.viewMode}"]`).forEach(b => b.classList.add('active'));
       _onStateChange('viewmode');
     });
   });
-
-  syncFormatGroupVisibility();
 
   // Sound toggle
   const soundBtn = document.getElementById('sound-toggle');
@@ -148,11 +156,6 @@ function bindToggleButtons() {
       _onStateChange('theme');
     });
   }
-}
-
-function syncFormatGroupVisibility() {
-  const el = document.getElementById('format-group');
-  if (el) el.style.display = _state.viewMode === 'diagram' ? 'none' : '';
 }
 
 function updateSoundBtn(btn) {
