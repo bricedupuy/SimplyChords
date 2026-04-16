@@ -8,28 +8,22 @@
 // Returns array of { label, intervals, bassInterval }
 
 export function getInversions(intervals) {
+  // Sort the base intervals ascending (root position)
   const sorted = [...intervals].sort((a, b) => a - b);
-  const n = sorted.length;
   const labels = ['Root', '1st inv', '2nd inv', '3rd inv', '4th inv'];
 
-  return sorted.map((_, invIdx) => {
-    // Rotate: notes before invIdx go up an octave
-    const rotated = sorted.map((iv, i) => {
-      const offset = i < invIdx ? iv + 12 : iv;
-      return offset - sorted[invIdx]; // re-zero to new bass note
-    }).sort((a, b) => a - b);
-
-    // Spread across 2 octaves for playability
-    const spread = rotated.map((iv, i) => {
-      // Keep notes within a reasonable voicing span
-      return iv > 24 ? iv - 12 : iv;
-    });
+  return sorted.map((bassIv, invIdx) => {
+    // An inversion keeps the SAME notes, just puts a different one in the bass.
+    // All intervals are still measured from the original root.
+    // Notes below the bass note get raised by an octave (+12).
+    const voicing = sorted.map(iv => iv < bassIv ? iv + 12 : iv);
+    // Sort so the bass is first
+    voicing.sort((a, b) => a - b);
 
     return {
-      label: labels[invIdx] || `Inv ${invIdx}`,
-      intervals: spread,
-      bassInterval: 0, // bass is always 0 after re-zeroing
-      rootOffset: sorted[invIdx], // how far the original root is now
+      label:      labels[invIdx] || `Inv ${invIdx}`,
+      intervals:  voicing,   // still relative to original root
+      bassNote:   bassIv,    // which interval is now in the bass
     };
   });
 }

@@ -47,10 +47,10 @@ function playNote(midi) {
 }
 
 // ── Interval role classifier ──────────────────────────────────────────────────
-// Returns 'root' | 'triad' | 'extension' for a semitone interval value.
-// Triads = the intervals that form the basic 3- or 4-note chord shell.
-// Extensions = 7ths, 9ths, 11ths, 13ths — colour but don't fill.
-const TRIAD_INTERVALS = new Set([0, 3, 4, 5, 6, 7, 8]); // root + 3rd + 5th (all qualities)
+// Triad = root + 3rd + 5th across all qualities:
+//   m3=3, M3=4, dim5=6, P5=7, aug5=8
+// Everything else (P4=5, m7=10, M7=11, 9th=2 as 14%12=2...) is an extension.
+const TRIAD_INTERVALS = new Set([3, 4, 6, 7, 8]);
 function intervalRole(iv) {
   const base = iv % 12;
   if (base === 0) return 'root';
@@ -76,19 +76,24 @@ function buildRoleMap(rootNoteIdx, intervals) {
 
 // ── Piano key renderer (shared for white and black) ───────────────────────────
 function renderKey(parent, { x, y, w, h, rx }, opts) {
-  const { role, isScale, interactive, intervalMidi, colours, bgColor, keyStroke } = opts;
+  const { role, isScale, isRepeat, interactive, intervalMidi, colours, bgColor, keyStroke } = opts;
 
   const isRoot      = role === 'root';
   const isTriad     = role === 'triad';
   const isExtension = role === 'extension';
   const isChord     = isRoot || isTriad || isExtension;
 
-  // Root ring: draw a slightly inset coloured rect behind the key as a border effect
-  // NOTE: callers draw the ring into ringsG (a layer above whites, below blacks)
-
-  const fill   = isRoot ? colours.root : isTriad ? colours.chord : bgColor;
-  const stroke = isExtension ? colours.chord : (!isChord ? keyStroke : 'none');
-  const strokeW = isExtension ? 1.2 : 0.8;
+  // Repeated notes (oct > 0) use outline-only regardless of role
+  let fill, stroke, strokeW;
+  if (isRepeat && isChord) {
+    fill    = bgColor;
+    stroke  = isRoot ? colours.root : colours.chord;
+    strokeW = 1.2;
+  } else {
+    fill    = isRoot ? colours.root : isTriad ? colours.chord : bgColor;
+    stroke  = isExtension ? colours.chord : (!isChord ? keyStroke : 'none');
+    strokeW = isExtension ? 1.2 : 0.8;
+  }
 
   const rect = el('rect', { x, y, width: w, height: h, rx, fill, stroke, 'stroke-width': strokeW }, parent);
 
@@ -137,21 +142,23 @@ export function renderPiano(rootNoteIdx, intervals, scaleNoteSet, compact = fals
     const x    = wPos * ww;
     const role    = roleMap.get(n) ?? null;
     const isScale = scaleNoteSet?.has(n) && !role;
+    const isRepeat = oct > 0 && !!role;
 
     renderKey(whitesG, { x, y: 0, w: ww, h: H, rx: 3 }, {
-      ...commonOpts, role, isScale,
+      ...commonOpts, role, isScale, isRepeat,
       intervalMidi: role
         ? noteMidi(rootNoteIdx, 4 + oct) + (intervals.find(iv => (rootNoteIdx + iv) % 12 === n) ?? 0) % 12
         : null,
     });
 
-    // Root ring drawn into ringsG (above whites, below blacks) so it's never clipped
-    if (role === 'root') {
+    // Root ring only in first octave
+    if (role === 'root' && !isRepeat) {
       el('rect', { x: x - 1.5, y: -1.5, width: ww + 3, height: H + 3, rx: 4,
         fill: 'none', stroke: colours.root, 'stroke-width': 2.5 }, ringsG);
     }
 
-    if (role) {
+    // Labels only in first octave
+    if (role && !isRepeat) {
       const isRoot = role === 'root';
       const isExt  = role === 'extension';
       el('text', {
@@ -176,22 +183,23 @@ export function renderPiano(rootNoteIdx, intervals, scaleNoteSet, compact = fals
     const x   = (BLACK_X_OFFSET[n] + oct * 7) * ww;
     const role    = roleMap.get(n) ?? null;
     const isScale = scaleNoteSet?.has(n) && !role;
+    const isRepeat = oct > 0 && !!role;
 
     renderKey(blacksG, { x, y: 0, w: bw, h: bh, rx: 2 }, {
-      ...commonOpts, role, isScale,
+      ...commonOpts, role, isScale, isRepeat,
       intervalMidi: role
         ? noteMidi(rootNoteIdx, 4 + oct) + (intervals.find(iv => (rootNoteIdx + iv) % 12 === n) ?? 0) % 12
         : null,
     });
 
-    if (role === 'root') {
+    if (role === 'root' && !isRepeat) {
       el('rect', { x: x - 1.5, y: -1.5, width: bw + 3, height: bh + 3, rx: 3,
         fill: 'none', stroke: colours.root, 'stroke-width': 2.5 }, ringsG);
     }
 
-    if (role === 'root' || role === 'triad') {
+    if ((role === 'root' || role === 'triad') && !isRepeat) {
       el('circle', { cx: x + bw / 2, cy: bh - 7, r: 3, fill: 'white', opacity: 0.9, 'pointer-events': 'none' }, blacksG);
-    } else if (role === 'extension') {
+    } else if (role === 'extension' && !isRepeat) {
       el('circle', { cx: x + bw / 2, cy: bh - 7, r: 2.5, fill: colours.chord, opacity: 0.8, 'pointer-events': 'none' }, blacksG);
     } else if (isScale) {
       el('circle', { cx: x + bw / 2, cy: bh - 7, r: 2, fill: '#7ad870', opacity: 0.8, 'pointer-events': 'none' }, blacksG);
