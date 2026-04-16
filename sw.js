@@ -21,6 +21,7 @@ const APP_SHELL = [
   './icon-192.png',
   './icon-512.png',
   './sw-manager.js',
+  './prefs.js',
   './ui/samples.js',
   './version.json',
   './data/theory.js',

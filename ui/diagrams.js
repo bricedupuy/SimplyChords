@@ -46,16 +46,53 @@ function playNote(midi) {
   playChord(midi, [0], { arpeggiate: false, duration: 1.5, gain: 0.35 });
 }
 
+// ── Interval role classifier ──────────────────────────────────────────────────
+// Returns 'root' | 'triad' | 'extension' for a semitone interval value.
+// Triads = the intervals that form the basic 3- or 4-note chord shell.
+// Extensions = 7ths, 9ths, 11ths, 13ths — colour but don't fill.
+const TRIAD_INTERVALS = new Set([0, 3, 4, 5, 6, 7, 8]); // root + 3rd + 5th (all qualities)
+function intervalRole(iv) {
+  const base = iv % 12;
+  if (base === 0) return 'root';
+  if (TRIAD_INTERVALS.has(base)) return 'triad';
+  return 'extension';
+}
+
+// Build a map from note-index → role for quick lookup in the key loops.
+// intervals is the full chord interval array e.g. [0,4,7,10]
+function buildRoleMap(rootNoteIdx, intervals) {
+  const map = new Map(); // noteIdx%12 → 'root'|'triad'|'extension'
+  intervals.forEach(iv => {
+    const noteIdx = (rootNoteIdx + iv) % 12;
+    const role = intervalRole(iv);
+    // Don't downgrade: root > triad > extension
+    const current = map.get(noteIdx);
+    if (!current || role === 'root' || (role === 'triad' && current === 'extension')) {
+      map.set(noteIdx, role);
+    }
+  });
+  return map;
+}
+
 // ── Piano key renderer (shared for white and black) ───────────────────────────
-function renderKey(parent, { x, y, w, h, rx }, noteState, opts) {
-  const { isRoot, isChord, isScale, interactive, intervalMidi, octaves, colours, bgColor, keyStroke } = opts;
+function renderKey(parent, { x, y, w, h, rx }, opts) {
+  const { role, isScale, interactive, intervalMidi, colours, bgColor, keyStroke } = opts;
 
-  const fill   = isRoot ? colours.root : isChord ? colours.chord : bgColor;
-  const stroke = (isRoot || isChord) ? 'none' : keyStroke;
+  const isRoot      = role === 'root';
+  const isTriad     = role === 'triad';
+  const isExtension = role === 'extension';
+  const isChord     = isRoot || isTriad || isExtension;
 
-  const rect = el('rect', { x, y, width: w, height: h, rx, fill, stroke, 'stroke-width': 0.8 }, parent);
+  // Root ring: draw a slightly inset coloured rect behind the key as a border effect
+  // NOTE: callers draw the ring into ringsG (a layer above whites, below blacks)
 
-  if (interactive && (isRoot || isChord) && intervalMidi != null) {
+  const fill   = isRoot ? colours.root : isTriad ? colours.chord : bgColor;
+  const stroke = isExtension ? colours.chord : (!isChord ? keyStroke : 'none');
+  const strokeW = isExtension ? 1.2 : 0.8;
+
+  const rect = el('rect', { x, y, width: w, height: h, rx, fill, stroke, 'stroke-width': strokeW }, parent);
+
+  if (interactive && isChord && intervalMidi != null) {
     rect.style.cursor = 'pointer';
     rect.addEventListener('click', () => playNote(intervalMidi));
     rect.addEventListener('mouseenter', () => rect.setAttribute('opacity', '0.75'));
@@ -76,6 +113,7 @@ export function renderPiano(rootNoteIdx, intervals, scaleNoteSet, compact = fals
   const bh = H * 0.6;
 
   const chordNotes = new Set(intervals.map(i => (rootNoteIdx + i) % 12));
+  const roleMap    = buildRoleMap(rootNoteIdx, intervals);
   const colours    = getChordColours(quality);
   const keyStroke  = getKeyStroke();
 
@@ -85,9 +123,10 @@ export function renderPiano(rootNoteIdx, intervals, scaleNoteSet, compact = fals
   });
 
   const whitesG = el('g', null, svgEl);
+  const ringsG  = el('g', null, svgEl); // root rings drawn above whites, below blacks
   const blacksG = el('g', null, svgEl);
 
-  const commonOpts = { interactive, colours, bgColor, keyStroke, octaves };
+  const commonOpts = { interactive, colours, bgColor, keyStroke };
 
   // White keys
   for (let i = 0; i < totalKeys; i++) {
@@ -96,22 +135,31 @@ export function renderPiano(rootNoteIdx, intervals, scaleNoteSet, compact = fals
     const oct  = Math.floor(i / 12);
     const wPos = WHITE_ORDER.indexOf(n) + oct * 7;
     const x    = wPos * ww;
-    const isRoot  = n === rootNoteIdx % 12 && oct === 0;
-    const isChord = chordNotes.has(n);
-    const isScale = scaleNoteSet?.has(n) && !isChord && !isRoot;
+    const role    = roleMap.get(n) ?? null;
+    const isScale = scaleNoteSet?.has(n) && !role;
 
-    renderKey(whitesG, { x, y: 0, w: ww, h: H, rx: 3 }, {}, {
-      ...commonOpts, isRoot, isChord, isScale,
-      intervalMidi: (isRoot || isChord)
+    renderKey(whitesG, { x, y: 0, w: ww, h: H, rx: 3 }, {
+      ...commonOpts, role, isScale,
+      intervalMidi: role
         ? noteMidi(rootNoteIdx, 4 + oct) + (intervals.find(iv => (rootNoteIdx + iv) % 12 === n) ?? 0) % 12
         : null,
     });
 
-    if (isRoot || isChord) {
+    // Root ring drawn into ringsG (above whites, below blacks) so it's never clipped
+    if (role === 'root') {
+      el('rect', { x: x - 1.5, y: -1.5, width: ww + 3, height: H + 3, rx: 4,
+        fill: 'none', stroke: colours.root, 'stroke-width': 2.5 }, ringsG);
+    }
+
+    if (role) {
+      const isRoot = role === 'root';
+      const isExt  = role === 'extension';
       el('text', {
         x: x + ww / 2, y: H - 7,
-        'text-anchor': 'middle', 'font-size': octaves === 2 ? 6 : 7,
-        fill: isRoot ? 'white' : colours.label,
+        'text-anchor': 'middle',
+        'font-size': octaves === 2 ? 6 : 7,
+        'font-weight': isRoot ? 'bold' : 'normal',
+        fill: isRoot ? 'white' : isExt ? colours.chord : colours.label,
         'font-family': 'monospace', 'pointer-events': 'none',
       }, whitesG).textContent = CHROMATIC[n];
     }
@@ -126,19 +174,25 @@ export function renderPiano(rootNoteIdx, intervals, scaleNoteSet, compact = fals
     if (!BLACK_ORDER.includes(n)) continue;
     const oct = Math.floor(i / 12);
     const x   = (BLACK_X_OFFSET[n] + oct * 7) * ww;
-    const isRoot  = n === rootNoteIdx % 12 && oct === 0;
-    const isChord = chordNotes.has(n);
-    const isScale = scaleNoteSet?.has(n) && !isChord && !isRoot;
+    const role    = roleMap.get(n) ?? null;
+    const isScale = scaleNoteSet?.has(n) && !role;
 
-    renderKey(blacksG, { x, y: 0, w: bw, h: bh, rx: 2 }, {}, {
-      ...commonOpts, isRoot, isChord, isScale,
-      intervalMidi: (isRoot || isChord)
+    renderKey(blacksG, { x, y: 0, w: bw, h: bh, rx: 2 }, {
+      ...commonOpts, role, isScale,
+      intervalMidi: role
         ? noteMidi(rootNoteIdx, 4 + oct) + (intervals.find(iv => (rootNoteIdx + iv) % 12 === n) ?? 0) % 12
         : null,
     });
 
-    if (isRoot || isChord) {
+    if (role === 'root') {
+      el('rect', { x: x - 1.5, y: -1.5, width: bw + 3, height: bh + 3, rx: 3,
+        fill: 'none', stroke: colours.root, 'stroke-width': 2.5 }, ringsG);
+    }
+
+    if (role === 'root' || role === 'triad') {
       el('circle', { cx: x + bw / 2, cy: bh - 7, r: 3, fill: 'white', opacity: 0.9, 'pointer-events': 'none' }, blacksG);
+    } else if (role === 'extension') {
+      el('circle', { cx: x + bw / 2, cy: bh - 7, r: 2.5, fill: colours.chord, opacity: 0.8, 'pointer-events': 'none' }, blacksG);
     } else if (isScale) {
       el('circle', { cx: x + bw / 2, cy: bh - 7, r: 2, fill: '#7ad870', opacity: 0.8, 'pointer-events': 'none' }, blacksG);
     }
@@ -148,11 +202,12 @@ export function renderPiano(rootNoteIdx, intervals, scaleNoteSet, compact = fals
   if (!compact) {
     const legendG = el('g', null, svgEl);
     [
-      { x: 2,  fill: colours.root,  label: 'root'  },
-      { x: 36, fill: colours.chord, label: 'chord' },
-      { x: 76, fill: '#5a9e50',     label: 'scale' },
-    ].forEach(({ x, fill, label }) => {
-      el('rect', { x, y: H + 2, width: 7, height: 7, rx: 1, fill }, legendG);
+      { x: 2,   fill: colours.root,  stroke: 'none',         label: 'root'  },
+      { x: 36,  fill: colours.chord, stroke: 'none',         label: 'chord' },
+      { x: 70,  fill: bgColor,       stroke: colours.chord,  label: 'ext'   },
+      { x: 96,  fill: '#5a9e50',     stroke: 'none',         label: 'scale' },
+    ].forEach(({ x, fill, stroke, label }) => {
+      el('rect', { x, y: H + 2, width: 7, height: 7, rx: 1, fill, stroke, 'stroke-width': 1 }, legendG);
       el('text', { x: x + 10, y: H + 9, 'font-size': 7, fill: '#888', 'font-family': 'sans-serif' }, legendG)
         .textContent = label;
     });

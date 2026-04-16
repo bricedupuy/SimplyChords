@@ -8,6 +8,10 @@ import { initDetailPanel, setStateRef as detailStateRef } from './ui/detail.js';
 import { MODES, getModeById, MODE_PROGRESSIONS } from './data/modes.js';
 import { registerSW } from './sw-manager.js';
 import { initSamplesUI } from './ui/samples.js';
+import { loadPrefs, loadTheme, savePrefs, syncUI, applyChordColours } from './prefs.js';
+
+// Apply theme immediately — before any render — to avoid flash of wrong theme
+loadTheme();
 
 export const state = {
   tonicIdx:     0,
@@ -22,6 +26,11 @@ export const state = {
   progression:  [],
 };
 
+// Restore persisted preferences into state before first render
+loadPrefs(state);
+// Apply chord colour mode to <html> from restored state
+applyChordColours(state.chordColours);
+
 export function init() {
   boardStateRef(state);
   arrowStateRef(state);
@@ -34,6 +43,9 @@ export function init() {
   initProgression();
   initDetailPanel();
 
+  // Sync all toggle buttons to restored state values
+  syncUI(state);
+
   document.getElementById('reset-path')?.addEventListener('click', () => {
     state.lastSelected = null;
     renderBoard();
@@ -42,7 +54,6 @@ export function init() {
   renderBoard();
   if (window.lucide) window.lucide.createIcons();
 
-  // Service worker + sample download UI
   registerSW();
   initSamplesUI('samples-ui');
 }
@@ -71,6 +82,9 @@ function initModeSwitcher() {
 }
 
 function onStateChange(what) {
+  // Always persist after any user interaction
+  savePrefs(state);
+
   if (what === 'viewmode') {
     applyViewMode();
   } else {
